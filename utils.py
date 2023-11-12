@@ -2,6 +2,7 @@ from scipy import fftpack
 import scipy.io as sio
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 # from core import f_res_transfer
 
 # variables
@@ -97,9 +98,18 @@ def audio_seg(audio_wav, phoneme_seg):
     return audio_seg
 
 # Plot the magnitude spectrum given x and y
-def plot_signal(x, y):
+def plot_signal(x, y, path, title, phoneme, is_org):
     plt.plot(x, y)
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Magnitude')
-    plt.title('Magnitude Spectrum')
-    plt.show()
+    plt.title(title)
+    if is_org:
+        figpath = f"org_{phoneme}.png"
+
+        filepath = os.path.join(path, figpath)
+        plt.savefig(filepath)
+    else:
+        figpath = f"tf_{phoneme}.png"
+        filepath = os.path.join(path, figpath)
+        plt.savefig(filepath)
+        plt.clf()

@@ -1,21 +1,24 @@
 from utils import audio_seg, audio_visual, read_phoneme
 from transfer import TF
-from core import f_res_transfer
 import numpy as np
-from core import rcs_single
+from process_audio import rcs_single, audio_single, AudioDataset, AudioPair
 
 # Variables
 SR = 16000
-N = 8
+N = 16
 RCS = np.zeros(N)
 OFFSET = 0.01
 EPOCHS = 1000
 THRESHOLD_E = 0.001
 L_TUBE = 17.5
 V_SOUND = 35000
-TAU = L_TUBE / (V_SOUND * N)
-print(f"TAU: {TAU}")
-print(f"TAU^-1: {1 / TAU}")
+TAU = L_TUBE / (V_SOUND * N)    # tau = T / 2 = 3.125e-5
+                                # = L_TUBE / (V_SOUND * N)
+                                # L_TUBE / V_SOUND = 5e-4
+                                # N = 16
+# print(f"TAU: {TAU}")
+# print(f"TAU^-1: {1 / TAU}")
+THRESHOLD_VC = 0.1
 
 # Phoneme categories
 stops = {"b", "d", "g", "p", "t", "k", "dx", "q"}
@@ -28,17 +31,10 @@ others = {"pau", "epi", "h#", "1", "2"}
 
 # audio_visual("SA1.WAV.wav", "SA1.PHN", SR)
 
-audio_segs = audio_seg("SA1.WAV.wav", read_phoneme("SA1.PHN"))
+# results = audio_single(RCS, EPOCHS, SR, THRESHOLD_VC, N, "SA1.WAV.wav", "SA1.PHN", vowels, OFFSET)
 
-for seg in audio_segs:
-    audio = seg[0]
-    phoneme = seg[1]
-    start = seg[2]
-    end = seg[3]
-    # print(f"phoneme: {phoneme}")
-    # print(f"start: {start}")
-    # print(f"end: {end}")
 
-    if phoneme in vowels:
-        print(f"For Phoneme: {phoneme}")
-        rcs_single(OFFSET, audio, phoneme, RCS, EPOCHS, SR, THRESHOLD_E, N)
+dataset = AudioPair(AudioDataset(root_dir="TIMIT/TEST"))
+print(f"audio_len: {len(dataset)}")
+
+# print(f"AudioDataset: {dataset.audios}")

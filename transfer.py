@@ -43,7 +43,8 @@ class TF:
         def num(z_val):
             ans = 1
             for rc in self.rcs:
-                ans = ans * (1 + rc) * (z_val ** (- self.N / 2))
+                ans = ans * (1 + rc)
+            ans = ans * (z_val ** (- self.N / 2))
             return ans
         
         # Denominator - D(z)
@@ -64,6 +65,7 @@ class TF:
         # print(f"denominator_shape: {denominator.shape}")
         # print(f"denominator: {denominator}")
         f_res = abs(numerator / denominator)
+        # val = 600 * np.log10(np.abs(f_res.item()))
         val = f_res.item()
 
         return val
