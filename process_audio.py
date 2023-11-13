@@ -238,7 +238,38 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
 
     return rcs, loss_avg_tube
 
-# Return phonemes and corresponding rcs from a single audio file
+# switch for vowels
+# Vowel order:
+# "iy", "ih", "eh", "ey", "ae", "aa", "aw", "ay", "ah", "ao", "oy", "ow", "uh", "uw", "ux", "er", "ax", "ix", "axr", "ax-h"
+def make_input(results, vowels):
+    rcs_layer = np.array([])
+    vowel_dict = {
+        "iy": [], "ih": [], "eh": [], "ey": [], "ae": [], "aa": [], "aw": [], "ay": [], "ah": [], "ao": [], "oy": [], "ow": [], "uh": [], "uw": [], "ux": [], "er": [], "ax": [], "ix": [], "axr": [], "ax-h": []
+    }
+
+    # Aggregate rcs for each vowel
+    for result in results:
+        phoneme, rcs, error = result
+        vowel_dict[phoneme].append(rcs)
+
+    # Go over the vowel dict, adds zeros[16] if the list is empty, average rcs if not
+    for vowel_item in vowel_dict.items():
+        vowel, rcs_list = vowel_item
+
+        if len(rcs_list) == 0:
+            rcs_list.append(np.zeros(16))
+        else:
+            rcs_list = np.array(rcs_list)
+            rcs_list = np.mean(rcs_list, axis=0)
+
+    # Go over the vowel dict again, and add the rcs to the rcs_layer
+    for rcs in vowel_dict.values():
+        rcs_layer = np.concatenate((rcs_layer, rcs), axis=None)
+    
+    return rcs_layer
+
+# Takes in a single audio file and phoneme segmentation file and returns the input layer for the network
+# 16 * 20 (# vowels) = 320
 def audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_seg, vowels, offset):
     audio_segs = audio_seg(audio_wav, read_phoneme(phoneme_seg))
     results = []
@@ -262,5 +293,7 @@ def audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_se
         print(f"phoneme: {phoneme}")
         print(f"rcs: {rcs}")
         print(f"error: {error}")
+    
+    rcs_layer = make_input(results, vowels)
 
-    return results
+    return rcs_layer

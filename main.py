@@ -2,6 +2,7 @@ from utils import audio_seg, audio_visual, read_phoneme
 from transfer import TF
 import numpy as np
 from process_audio import rcs_single, audio_single, AudioDataset, AudioPair
+from siamese import SiameseNetwork, ContrastiveLoss
 
 # Variables
 SR = 16000
@@ -35,6 +36,6 @@ others = {"pau", "epi", "h#", "1", "2"}
 
 
 dataset = AudioPair(AudioDataset(root_dir="TIMIT/TEST"))
-print(f"audio_len: {len(dataset)}")
-
+# print(f"audio_len: {len(dataset)}")
 # print(f"AudioDataset: {dataset.audios}")
+
