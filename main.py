@@ -3,6 +3,10 @@ from transfer import TF
 import numpy as np
 from process_audio import rcs_single, audio_single, AudioDataset, AudioPair
 from siamese import SiameseNetwork, ContrastiveLoss
+from train_siamese import train_loop
+
+from torch.utils.data import DataLoader
+from torch import optim
 
 # Variables
 SR = 16000
@@ -34,8 +38,14 @@ others = {"pau", "epi", "h#", "1", "2"}
 
 # results = audio_single(RCS, EPOCHS, SR, THRESHOLD_VC, N, "SA1.WAV.wav", "SA1.PHN", vowels, OFFSET)
 
+def main():
+    dataset = AudioPair(AudioDataset(root_dir="TIMIT/TEST"))
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=1)
+    siamese = SiameseNetwork()
+    # print(f"audio_len: {len(dataset)}")
+    # print(f"AudioDataset: {dataset.audios}")
 
-dataset = AudioPair(AudioDataset(root_dir="TIMIT/TEST"))
-# print(f"audio_len: {len(dataset)}")
-# print(f"AudioDataset: {dataset.audios}")
+    train_loop(siamese, dataloader, ContrastiveLoss(), optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET)
 
+if __name__ == "__main__":
+    main()

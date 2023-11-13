@@ -21,8 +21,9 @@ class AudioDataset(Dataset):
 
     def _load_data(self):
         # Create pair of audio files
+        print("Loading data...")
         for dialect in os.listdir(self.root_dir):
-            print(f"Loading data from {dialect} dialect")
+            # print(f"Loading data from {dialect} dialect")
             dialect_dir = os.path.join(self.root_dir, dialect)
 
             # Check if its a directory (not .DS_Store)
@@ -37,7 +38,7 @@ class AudioDataset(Dataset):
                     continue
 
                 # from the directory name extract gender, initials, and index
-                print(f"Loading data from {speaker} speaker")
+                # print(f"Loading data from {speaker} speaker")
                 gender = speaker[0]
                 initials = speaker[1:3]
                 index = speaker[4]
@@ -50,11 +51,11 @@ class AudioDataset(Dataset):
                 wav_f = None
                 
                 for file in files:
-                    if file.endswith("PHN"):
+                    if file.endswith(".PHN"):
                         phoneme_f = os.path.join(speaker_dir, file)
-                    elif file.endswith("TXT"):
+                    elif file.endswith(".TXT"):
                         text_f = os.path.join(speaker_dir, file)
-                    elif file.endswith("WAV"):
+                    elif file.endswith(".wav"):
                         wav_f = os.path.join(speaker_dir, file)
 
                     # If all files are found, append to list
@@ -72,10 +73,10 @@ class AudioDataset(Dataset):
         return len(self.audios)
 
     def __getitem__(self, idx):
-        audio = self.audio(idx)
-        phoneme = self.phoneme(idx)
-        text = self.text(idx)
-        speaker = self.speaker(idx)
+        audio = self.audios[idx]
+        phoneme = self.phonemes[idx]
+        text = self.texts[idx]
+        speaker = self.speakers[idx]
 
         return audio, phoneme, text, speaker
     

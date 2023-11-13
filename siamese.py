@@ -22,22 +22,28 @@ class SiameseNetwork(nn.Module):
             # (4, 16, 320) -> (4, 16, 160)
 
             nn.Conv1d(in_channels=16, out_channels=32, kernel_size=5, stride=1, padding=2),
+            # (4, 16, 160) -> (4, 32, 160)
             nn.ReLU(inplace=True)
         )
 
         # Fully Connected Layer
         self.fc = nn.Sequential(
-            nn.Linear(32, 128),
+            nn.Linear(5120, 1280),
             nn.ReLU(inplace=True),
 
-            nn.Linear(128, 64),
+            nn.Linear(1280, 640),
             nn.ReLU(inplace=True),
 
-            nn.Linear(64, 2)
+            nn.Linear(640, 320),
+            nn.ReLU(inplace=True),
+
+            nn.Linear(320, 160)
         )
 
     def forward_once(self, x):
         x = self.cnn(x)
+        x = x.view(x.size()[0], -1)
+        # (4, 16, 320) -> (4, 5120)
         x = self.fc(x)
         return x
     def forward(self, intput1, intput2):
@@ -53,7 +59,6 @@ class ContrastiveLoss(torch.nn.Module):
     
     def forward(self, output1, output2, label):
         euclidean_distance = F.pairwise_distance(output1, output2)
-        loss_contrastive = torch.mean((1-label) * torch.pow(euclidean_distance, 2) + 
-                                      (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
+        loss_contrastive = torch.mean((1-label) * torch.pow(euclidean_distance, 2) + (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
         return loss_contrastive
     
