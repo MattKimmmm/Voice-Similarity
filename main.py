@@ -39,11 +39,12 @@ others = {"pau", "epi", "h#", "1", "2"}
 # results = audio_single(RCS, EPOCHS, SR, THRESHOLD_VC, N, "SA1.WAV.wav", "SA1.PHN", vowels, OFFSET)
 
 def main():
-    dataset = AudioPair(AudioDataset(root_dir="data/TEST"))
+    dataset_single = AudioDataset(root_dir="data/TEST")
+    print(f"dataset_single: {len(dataset_single)}")
+    dataset = AudioPair(dataset_single)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=1)
     siamese = SiameseNetwork()
-    # print(f"audio_len: {len(dataset)}")
-    # print(f"AudioDataset: {dataset.audios}")
+    print(f"dataset: {len(dataset)}")
 
     train_loop(siamese, dataloader, ContrastiveLoss(), optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET)
 

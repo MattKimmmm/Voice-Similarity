@@ -18,7 +18,7 @@ class SiameseNetwork(nn.Module):
             # L_out = [(L_in + 2 * padding - dilation * (kernel_size - 1) - 1) / stride + 1] = 320
             # Output (4, 16, 320)
             nn.ReLU(inplace=True),
-            nn.MaxPool1d(kernel_size=4, stride=2),
+            nn.MaxPool1d(kernel_size=4, stride=2, padding=1),
             # (4, 16, 320) -> (4, 16, 160)
 
             nn.Conv1d(in_channels=16, out_channels=32, kernel_size=5, stride=1, padding=2),
@@ -41,13 +41,16 @@ class SiameseNetwork(nn.Module):
         )
 
     def forward_once(self, x):
-        print(f"Input shape: {x.shape}")
+        # print(f"Input shape: {x.shape}")
         x = self.cnn(x)
+        # print(f"After CNN shape: {x.shape}")
         x = x.view(x.size()[0], -1)
         # (4, 16, 320) -> (4, 5120)
+        # print(f"After flattening shape: {x.shape}")
         x = self.fc(x)
         return x
     def forward(self, intput1, intput2):
+        # print("forward_SiameseNetwork")
         output1 = self.forward_once(intput1)
         output2 = self.forward_once(intput2)
         return output1, output2

@@ -22,52 +22,57 @@ class AudioDataset(Dataset):
     def _load_data(self):
         # Create pair of audio files
         print("Loading data...")
-        for dialect in os.listdir(self.root_dir):
-            # print(f"Loading data from {dialect} dialect")
-            dialect_dir = os.path.join(self.root_dir, dialect)
 
-            # Check if its a directory (not .DS_Store)
-            if not os.path.isdir(dialect_dir):
+        # Currently just DR1
+
+        # for dialect in os.listdir(self.root_dir):
+        #     # print(f"Loading data from {dialect} dialect")
+        #     dialect_dir = os.path.join(self.root_dir, dialect)
+
+        dialect_dir = os.path.join(self.root_dir, "DR1")
+
+        # Check if its a directory (not .DS_Store)
+        # if not os.path.isdir(dialect_dir):
+        #     continue
+
+        for speaker in os.listdir(dialect_dir):
+            # Iterate over files in speaker directory and extract relevant files
+            speaker_dir = os.path.join(dialect_dir, speaker)
+
+            if not os.path.isdir(speaker_dir):
                 continue
 
-            for speaker in os.listdir(dialect_dir):
-                # Iterate over files in speaker directory and extract relevant files
-                speaker_dir = os.path.join(dialect_dir, speaker)
+            # from the directory name extract gender, initials, and index
+            # print(f"Loading data from {speaker} speaker")
+            gender = speaker[0]
+            initials = speaker[1:3]
+            index = speaker[4]
 
-                if not os.path.isdir(speaker_dir):
-                    continue
+            files = sorted(os.listdir(speaker_dir))
 
-                # from the directory name extract gender, initials, and index
-                # print(f"Loading data from {speaker} speaker")
-                gender = speaker[0]
-                initials = speaker[1:3]
-                index = speaker[4]
+            # Initialize Variables
+            phoneme_f = None
+            text_f = None
+            wav_f = None
+            
+            for file in files:
+                if file.endswith(".PHN"):
+                    phoneme_f = os.path.join(speaker_dir, file)
+                elif file.endswith(".TXT"):
+                    text_f = os.path.join(speaker_dir, file)
+                elif file.endswith(".wav"):
+                    wav_f = os.path.join(speaker_dir, file)
 
-                files = sorted(os.listdir(speaker_dir))
-
-                # Initialize Variables
-                phoneme_f = None
-                text_f = None
-                wav_f = None
-                
-                for file in files:
-                    if file.endswith(".PHN"):
-                        phoneme_f = os.path.join(speaker_dir, file)
-                    elif file.endswith(".TXT"):
-                        text_f = os.path.join(speaker_dir, file)
-                    elif file.endswith(".wav"):
-                        wav_f = os.path.join(speaker_dir, file)
-
-                    # If all files are found, append to list
-                    if phoneme_f and text_f and wav_f:
-                        self.phonemes.append(phoneme_f)
-                        self.texts.append(text_f)
-                        self.audios.append(wav_f)
-                        self.speakers.append(speaker)
-                        # print(f"speaker: {speaker}")
-                        
-                        # Reset Variables
-                        phoneme_f = text_f = wav_f = None
+                # If all files are found, append to list
+                if phoneme_f and text_f and wav_f:
+                    self.phonemes.append(phoneme_f)
+                    self.texts.append(text_f)
+                    self.audios.append(wav_f)
+                    self.speakers.append(speaker)
+                    # print(f"speaker: {speaker}")
+                    
+                    # Reset Variables
+                    phoneme_f = text_f = wav_f = None
     
     def __len__(self):
         return len(self.audios)
@@ -92,7 +97,12 @@ class AudioPair(Dataset):
 
     # Return index combination 
     def _create_pairs(self):
-        self.pairs = list(combinations(range(len(self.audio_dataset)), 2))
+        # Unique paring
+        unique_pairs = list(combinations(range(len(self.audio_dataset)), 2))
+        # Self paring
+        self_pairs = [(i, i) for i in range(len(self.audio_dataset))]
+
+        self.pairs = unique_pairs + self_pairs
         return self.pairs    
     
     def __len__(self):
