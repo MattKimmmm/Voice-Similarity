@@ -1,9 +1,12 @@
 from process_audio import audio_single
 import torch
+import time
 
 def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, threshold_vc, num_tubes, vowels, offset):
     loss_prev = 0
     for epoch in range(epochs):
+        since = time.time()
+
         print(f"Epoch {epoch + 1}\n-------------------------------")
         # batches
         for i, (audio1, phoneme1, text1, speaker1, audio2, phoneme2, text2, speaker2, label) in enumerate(dataloader):
@@ -53,6 +56,7 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
             break
 
         print(f"Epoch {epoch} loss: {loss.item()}")
+        print(f"Time elapsed: {time.time() - since}s")
     
     # save the model
     torch.save(network.state_dict(), 'models/siamese_1114.pth')
