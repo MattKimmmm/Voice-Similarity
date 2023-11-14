@@ -41,6 +41,7 @@ class SiameseNetwork(nn.Module):
         )
 
     def forward_once(self, x):
+        print(f"Input shape: {x.shape}")
         x = self.cnn(x)
         x = x.view(x.size()[0], -1)
         # (4, 16, 320) -> (4, 5120)

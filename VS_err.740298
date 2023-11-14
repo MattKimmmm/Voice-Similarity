@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "main.py", line 51, in <module>
+    main()
+  File "main.py", line 48, in main
+    train_loop(siamese, dataloader, ContrastiveLoss(), optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET)
+  File "/storage1/zhang.ning/Active/Oliver/Medical-SoK/icd_coding_multirescnn/Voice-Similarity/train_siamese.py", line 33, in train_loop
+    output1, output2 = network(layer_1_tensor, layer_2_tensor)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1194, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/storage1/zhang.ning/Active/Oliver/Medical-SoK/icd_coding_multirescnn/Voice-Similarity/siamese.py", line 50, in forward
+    output1 = self.forward_once(intput1)
+  File "/storage1/zhang.ning/Active/Oliver/Medical-SoK/icd_coding_multirescnn/Voice-Similarity/siamese.py", line 44, in forward_once
+    x = self.cnn(x)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1194, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/container.py", line 204, in forward
+    input = module(input)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1194, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/conv.py", line 313, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/conv.py", line 309, in _conv_forward
+    return F.conv1d(input, weight, bias, self.stride,
+RuntimeError: Expected 2D (unbatched) or 3D (batched) input to conv1d, but got input of size: [320]

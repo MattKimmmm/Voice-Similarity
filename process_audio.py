@@ -233,9 +233,9 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
     # plot f_res_org and f_res_tf_up
     path = "./figures/vocal_tract_1109"
     title = f"Frequency Response of {phoneme}"
-    plot_signal(freq_bin_pos, f_res_org, path, title, phoneme, True)
+    # plot_signal(freq_bin_pos, f_res_org, path, title, phoneme, True)
     title = f"V(z) of {phoneme}"
-    plot_signal(freq_bin_pos, f_res_tf_up, path, title, phoneme, False)
+    # plot_signal(freq_bin_pos, f_res_tf_up, path, title, phoneme, False)
 
     return rcs, loss_avg_tube
 
@@ -256,16 +256,17 @@ def make_input(results, vowels):
     # Go over the vowel dict, adds zeros[16] if the list is empty, average rcs if not
     for vowel_item in vowel_dict.items():
         vowel, rcs_list = vowel_item
+        num_captured = len(rcs_list)
 
-        if len(rcs_list) == 0:
+        if num_captured == 0:
             rcs_list.append(np.zeros(16))
-        else:
+        elif num_captured > 1:
             rcs_list = np.array(rcs_list)
-            rcs_list = np.mean(rcs_list, axis=0)
+            rcs_list[0] = np.mean(rcs_list)
 
     # Go over the vowel dict again, and add the rcs to the rcs_layer
     for rcs in vowel_dict.values():
-        rcs_layer = np.concatenate((rcs_layer, rcs), axis=None)
+        rcs_layer = np.concatenate((rcs_layer, rcs[0]), axis=None)
     
     return rcs_layer
 
