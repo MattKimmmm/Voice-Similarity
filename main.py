@@ -24,7 +24,7 @@ TAU = L_TUBE / (V_SOUND * N)    # tau = T / 2 = 3.125e-5
 # print(f"TAU: {TAU}")
 # print(f"TAU^-1: {1 / TAU}")
 THRESHOLD_VC = 0.1
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 
 # Phoneme categories
 stops = {"b", "d", "g", "p", "t", "k", "dx", "q"}
