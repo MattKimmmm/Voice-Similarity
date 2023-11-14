@@ -17,18 +17,24 @@ semivowels_glides = {"l", "r", "w", "y", "hh", "hv", "el"}
 vowels = {"iy", "ih", "eh", "ey", "ae", "aa", "aw", "ay", "ah", "ao", "oy", "ow", "uh", "uw", "ux", "er", "ax", "ix", "axr", "ax-h"}
 others = {"pau", "epi", "h#", "1", "2"}
 
+# Batch-modified
 # Process the phoneme label file and return the array [# segments, 3], where the column is [start time, end time, phoneme]
 def read_phoneme(phoneme_org):
-    segs = []
-    with open(phoneme_org, 'r') as f:
-        for line in f:
-            segs.append(line.split())
-    segs = np.array(segs)
-    segs[:, 0] = segs[:, 0].astype(float)
-    segs[:, 1] = segs[:, 1].astype(float)
-    # print(f"segs.shape: {segs.shape}")
-    # print(f"segs: {segs}")
-    return segs
+    segs_list = []
+    for phoneme in phoneme_org:
+        print(f"phoneme_org: {phoneme_org}")
+        print(f"phoneme: {phoneme}")
+        segs = []
+        with open(phoneme, 'r') as f:
+            for line in f:
+                segs.append(line.split())
+        segs = np.array(segs)
+        segs[:, 0] = segs[:, 0].astype(float)
+        segs[:, 1] = segs[:, 1].astype(float)
+        # print(f"segs.shape: {segs.shape}")
+        # print(f"segs: {segs}")
+        segs_list.append(segs)
+    return segs_list
 
 def audio_visual(audio_wav, phoneme_org, SR):
     phoneme_segs = read_phoneme(phoneme_org)
@@ -81,21 +87,28 @@ def show_wav(audio, start, end, num_samples):
     # plt.title('Magnitude Spectrum')
     # plt.show()
 
+# Batch-modified
 # segment audio file given phoneme labels. Return the segmented audio, corresponding phoneme labels, and the start and end time of each segment
 def audio_seg(audio_wav, phoneme_seg):
-    rate, y = sio.wavfile.read(audio_wav)
-    y = np.array(y).astype(float)
-    # print(f"y.shape: {y.shape}")
-    
-    audio_seg = []
-    for seg in phoneme_seg:
-        start = int(float(seg[0]))
-        end = int(float(seg[1]))
-        phoneme = seg[2]
+    audio_seg_list = []
 
-        audio_seg.append([y[start:end], phoneme, start, end])
+    for audio, phoneme in zip(audio_wav, phoneme_seg):
+
+        rate, y = sio.wavfile.read(audio)
+        y = np.array(y).astype(float)
+        # print(f"y.shape: {y.shape}")
+        
+        audio_seg = []
+        for seg in phoneme:
+            start = int(float(seg[0]))
+            end = int(float(seg[1]))
+            phoneme = seg[2]
+
+            audio_seg.append([y[start:end], phoneme, start, end])
+        
+        audio_seg_list.append(audio_seg)
     
-    return audio_seg
+    return audio_seg_list
 
 # Plot the magnitude spectrum given x and y
 def plot_signal(x, y, path, title, phoneme, is_org):

@@ -1,5 +1,6 @@
 /TIMIT
 /figures
 /data
+/models
 VS.*
 VS_err.*

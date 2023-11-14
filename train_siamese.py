@@ -2,7 +2,7 @@ from process_audio import audio_single
 import torch
 
 def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, threshold_vc, num_tubes, vowels, offset):
-
+    loss_prev = 0
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1}\n-------------------------------")
         # batches
@@ -18,8 +18,8 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
             # print(f"text1: {text1}")
             # print(f"text2: {text2}")
 
-            layer_1 = audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio1[0], phoneme1[0], vowels, offset)
-            layer_2 = audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio2[0], phoneme2[0], vowels, offset)
+            layer_1 = audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio1, phoneme1, vowels, offset)
+            layer_2 = audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio2, phoneme2, vowels, offset)
             # print(f"layer_1 shape: {layer_1.shape}")
             # print(f"layer_1: {layer_1}")
 
@@ -47,7 +47,15 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
             loss.backward()
             optimizer.step()
 
-  
+        # If loss improvement is less than threshold, stop training
+        if abs(loss_prev - loss.item()) < 1:
+            print("Loss improvement less than threshold, stop training")
+            break
+
         print(f"Epoch {epoch} loss: {loss.item()}")
+    
+    # save the model
+    torch.save(network.state_dict(), 'models/siamese_1114.pth')
+    print("Training Done")
 
     

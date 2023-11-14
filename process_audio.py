@@ -280,32 +280,37 @@ def make_input(results, vowels):
     
     return rcs_layer
 
+# Batch-modified
 # Takes in a single audio file and phoneme segmentation file and returns the input layer for the network
 # 16 * 20 (# vowels) = 320
 def audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_seg, vowels, offset):
-    audio_segs = audio_seg(audio_wav, read_phoneme(phoneme_seg))
-    results = []
+    audio_batch = audio_seg(audio_wav, read_phoneme(phoneme_seg))
+    rcs_layers = []
 
-    for seg in audio_segs:
-        audio = seg[0]
-        phoneme = seg[1]
-        start = seg[2]
-        end = seg[3]
-        # print(f"phoneme: {phoneme}")
-        # print(f"start: {start}")
-        # print(f"end: {end}")
+    for audios in audio_batch:
+        results = []
 
-        if phoneme in vowels:
-            print(f"For Phoneme: {phoneme}")
-            rcs, error = rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold_vc, num_tubes)
-            results.append((phoneme, rcs, error))
+        for seg in audios:
+            audio = seg[0]
+            phoneme = seg[1]
+            start = seg[2]
+            end = seg[3]
+            # print(f"phoneme: {phoneme}")
+            # print(f"start: {start}")
+            # print(f"end: {end}")
 
-    for result in results:
-        phoneme, rcs, error = result
-        print(f"phoneme: {phoneme}")
-        print(f"rcs: {rcs}")
-        print(f"error: {error}")
+            if phoneme in vowels:
+                print(f"For Phoneme: {phoneme}")
+                rcs, error = rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold_vc, num_tubes)
+                results.append((phoneme, rcs, error))
+
+        for result in results:
+            phoneme, rcs, error = result
+            print(f"phoneme: {phoneme}")
+            print(f"rcs: {rcs}")
+            print(f"error: {error}")
     
-    rcs_layer = make_input(results, vowels)
+        rcs_layer = make_input(results, vowels)
+        rcs_layers.append(rcs_layer)
 
-    return rcs_layer
+    return rcs_layers

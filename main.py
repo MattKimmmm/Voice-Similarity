@@ -24,6 +24,7 @@ TAU = L_TUBE / (V_SOUND * N)    # tau = T / 2 = 3.125e-5
 # print(f"TAU: {TAU}")
 # print(f"TAU^-1: {1 / TAU}")
 THRESHOLD_VC = 0.1
+BATCH_SIZE = 64
 
 # Phoneme categories
 stops = {"b", "d", "g", "p", "t", "k", "dx", "q"}
@@ -42,7 +43,7 @@ def main():
     dataset_single = AudioDataset(root_dir="data/TEST")
     print(f"dataset_single: {len(dataset_single)}")
     dataset = AudioPair(dataset_single)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=1)
+    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
     siamese = SiameseNetwork()
     print(f"dataset: {len(dataset)}")
 
