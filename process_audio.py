@@ -212,7 +212,7 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
         loss_avg_tube = np.mean(loss_tube)
 
         if np.abs(loss_avg_tube - loss_prev) < threshold:
-            print("Error improvement less than threshold. Terminating")
+            # print("Error improvement less than threshold. Terminating")
             break
 
         if loss_avg_tube > loss_prev:
@@ -221,7 +221,7 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
             count += 1
 
             if count > 4:
-                print("Error not improving in 5 consecutive steps. Terminating")
+                # print("Error not improving in 5 consecutive steps. Terminating")
                 break
             
         # when loss < loss_prev
@@ -233,15 +233,15 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
         
         loss_prev = loss_avg_tube
         
-        if i % 20 == 0:
-            print(f"Loss at Epoch {i}: {loss_avg_tube}")
-            print("Current rcs: ", rcs)
+        # if i % 20 == 0:
+        #     print(f"Loss at Epoch {i}: {loss_avg_tube}")
+        #     print("Current rcs: ", rcs)
 
-    print(f"Outputs for {phoneme}:")
-    print(f"Final rcs: {rcs}")
-    print(f"Final loss: {loss_avg_tube}")
+    # print(f"Outputs for {phoneme}:")
+    # print(f"Final rcs: {rcs}")
+    # print(f"Final loss: {loss_avg_tube}")
     # plot f_res_org and f_res_tf_up
-    path = "./figures/vocal_tract_1109"
+    path = "./figures/vocal_tract_1115"
     title = f"Frequency Response of {phoneme}"
     # plot_signal(freq_bin_pos, f_res_org, path, title, phoneme, True)
     title = f"V(z) of {phoneme}"
@@ -300,7 +300,7 @@ def audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_se
             # print(f"end: {end}")
 
             if phoneme in vowels:
-                print(f"For Phoneme: {phoneme}")
+                # print(f"For Phoneme: {phoneme}")
                 rcs, error = rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold_vc, num_tubes)
                 results.append((phoneme, rcs, error))
 

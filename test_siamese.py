@@ -3,19 +3,18 @@ import torch
 import time
 import numpy as np
 
-def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, threshold_vc, num_tubes, vowels, offset, device):
-    loss_prev = 0
+def test_loop(network, dataloader, criterion, epochs, rcs, sr, threshold_vc, num_tubes, vowels, offset, device):
+    
+    losses = []
 
+    network.eval()
     network.to(device)
     criterion.to(device)
-
-    for epoch in range(epochs):
-        since = time.time()
-
-        print(f"Epoch {epoch + 1}\n-------------------------------")
+    
+    with torch.no_grad():
         # batches
         for i, (audio1, phoneme1, text1, speaker1, audio2, phoneme2, text2, speaker2, label) in enumerate(dataloader):
-
+            since = time.time()
             # print(f"phoneme1: {phoneme1[0]}")
             # print(f"phoneme2: {phoneme2}")
             # print(f"audio1: {audio1}")
@@ -44,30 +43,19 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
                 layer_1_tensor = layer_1_tensor.unsqueeze(0).unsqueeze(0)
                 layer_2_tensor = layer_2_tensor.unsqueeze(0).unsqueeze(0)
 
-            # Forward pass
-            optimizer.zero_grad()
-
             # Pass in the two layers
             output1, output2 = network(layer_1_tensor, layer_2_tensor)
 
             # Loss
             loss = criterion(output1, output2, label)
+            losses.append(loss.item())
 
-            # Backpropagate
-            loss.backward()
-            optimizer.step()
-
-        # If loss improvement is less than threshold, stop training
-        if abs(loss_prev - loss.item()) < 1:
-            print("Loss improvement less than threshold, stop training")
-            break
-
-        loss_prev = loss.item()
-        print(f"Epoch {epoch} loss: {loss.item()}")
-        print(f"Time elapsed: {time.time() - since}s")
+            print(f"Batch {i} loss: {loss.item()}")
+            print(f"Time elapsed: {time.time() - since}s")
     
-    # save the model
-    torch.save(network.state_dict(), 'models/siamese_1115.pth')
-    print("Training Done")
+    print(f"Average loss: {sum(losses) / len(losses)}")
+
+    print("Test Done")
 
     
+

@@ -5,6 +5,7 @@ from process_audio import rcs_single, audio_single, AudioDataset, AudioPair
 from siamese import SiameseNetwork, ContrastiveLoss
 from train_siamese import train_loop
 
+import torch
 from torch.utils.data import DataLoader
 from torch import optim
 
@@ -25,6 +26,10 @@ TAU = L_TUBE / (V_SOUND * N)    # tau = T / 2 = 3.125e-5
 # print(f"TAU^-1: {1 / TAU}")
 THRESHOLD_VC = 0.1
 BATCH_SIZE = 16
+
+# CUDA
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Device: {DEVICE}")
 
 # Phoneme categories
 stops = {"b", "d", "g", "p", "t", "k", "dx", "q"}
@@ -47,7 +52,7 @@ def main():
     siamese = SiameseNetwork()
     print(f"dataset: {len(dataset)}")
 
-    train_loop(siamese, dataloader, ContrastiveLoss(), optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET)
+    train_loop(siamese, dataloader, ContrastiveLoss(), optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, DEVICE)
 
 if __name__ == "__main__":
     main()
