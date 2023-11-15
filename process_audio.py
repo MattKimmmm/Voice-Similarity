@@ -313,4 +313,4 @@ def audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_se
         rcs_layer = make_input(results, vowels)
         rcs_layers.append(rcs_layer)
 
-    return rcs_layers
+    return np.array(rcs_layers)

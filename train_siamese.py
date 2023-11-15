@@ -4,6 +4,13 @@ import time
 
 def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, threshold_vc, num_tubes, vowels, offset):
     loss_prev = 0
+
+    # CUDA
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Device: {device}")
+    network.to(device)
+    criterion.to(device)
+
     for epoch in range(epochs):
         since = time.time()
 
@@ -26,8 +33,9 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
             # print(f"layer_1 shape: {layer_1.shape}")
             # print(f"layer_1: {layer_1}")
 
-            layer_1_tensor = torch.from_numpy(layer_1).float()  # Convert to tensor and ensure dtype is float
-            layer_2_tensor = torch.from_numpy(layer_2).float()  # Convert to tensor
+            layer_1_tensor = torch.from_numpy(layer_1).float().to(device)  # Convert to tensor and ensure dtype is float
+            layer_2_tensor = torch.from_numpy(layer_2).float().to(device)  # Convert to tensor
+            label = torch.from_numpy(np.array(label)).float().to(device)
 
             # Initialize two (1, 1, 320) tensors
             # layer_1_tensor = torch.randn((1, 1, 320))
@@ -55,6 +63,7 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
             print("Loss improvement less than threshold, stop training")
             break
 
+        loss_prev = loss.item()
         print(f"Epoch {epoch} loss: {loss.item()}")
         print(f"Time elapsed: {time.time() - since}s")
     
