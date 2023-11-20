@@ -25,11 +25,15 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
             # print("for texts:")
             # print(f"text1: {text1}")
             # print(f"text2: {text2}")
+            
+            # Time for audio_single()
+            since_audio = time.time()
 
             layer_1 = audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio1, phoneme1, vowels, offset)
             layer_2 = audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio2, phoneme2, vowels, offset)
             # print(f"layer_1 shape: {layer_1.shape}")
             # print(f"layer_1: {layer_1}")
+            print(f"Time taken for two audio_single(): {time.time() - since_audio}s")
 
             layer_1_tensor = torch.from_numpy(layer_1).float().to(device)  # Convert to tensor and ensure dtype is float
             layer_2_tensor = torch.from_numpy(layer_2).float().to(device)  # Convert to tensor

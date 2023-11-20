@@ -306,9 +306,9 @@ def audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_se
 
         for result in results:
             phoneme, rcs, error = result
-            print(f"phoneme: {phoneme}")
-            print(f"rcs: {rcs}")
-            print(f"error: {error}")
+            # print(f"phoneme: {phoneme}")
+            # print(f"rcs: {rcs}")
+            # print(f"error: {error}")
     
         rcs_layer = make_input(results, vowels)
         rcs_layers.append(rcs_layer)
