@@ -22,8 +22,8 @@ others = {"pau", "epi", "h#", "1", "2"}
 def read_phoneme(phoneme_org):
     segs_list = []
     for phoneme in phoneme_org:
-        print(f"phoneme_org: {phoneme_org}")
-        print(f"phoneme: {phoneme}")
+        # print(f"phoneme_org: {phoneme_org}")
+        # print(f"phoneme: {phoneme}")
         segs = []
         with open(phoneme, 'r') as f:
             for line in f:
@@ -49,9 +49,9 @@ def audio_visual(audio_wav, phoneme_org, SR):
             end = float(seg[3]) / SR
             num_samples = len(audio)
 
-            print(f"phoneme: {phoneme}")
-            print(f"start: {start}")
-            print(f"end: {end}")
+            # print(f"phoneme: {phoneme}")
+            # print(f"start: {start}")
+            # print(f"end: {end}")
             show_wav(audio, start, end, num_samples)
 
 def show_wav(audio, start, end, num_samples):
