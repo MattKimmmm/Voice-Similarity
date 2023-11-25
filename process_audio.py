@@ -1,21 +1,31 @@
-from transfer import TF
 import numpy as np
-from scipy import fftpack
-from utils import plot_signal, audio_seg, read_phoneme
+from utils import plot_signal, audio_seg, read_phoneme, audio_seg_pp, read_phoneme_pp
+from transfer import tf
 import os
 from itertools import combinations
+import time
+from numba import njit
 
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+
 # Custom Audio Dataset for TIMIT data
 class AudioDataset(Dataset):
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, rcs_init, epochs, sr, threshold_vc, num_tubes, vowels, offset):
         self.audios = []    # Audio file
         self.speakers = []  # Speaker ID
         self.phonemes = []  # Phoneme file
         self.texts = []     # Text file
+        self.rcs = []       # Reflection Coefficients
         self.root_dir = root_dir
+        self.rcs_init = rcs_init
+        self.epochs = epochs
+        self.sr = sr
+        self.threshold_vc = threshold_vc
+        self.num_tubes = num_tubes
+        self.vowels = vowels
+        self.offset = offset
 
         self._load_data()
 
@@ -71,6 +81,10 @@ class AudioDataset(Dataset):
                     self.speakers.append(speaker)
                     # print(f"speaker: {speaker}")
                     
+                    # Extract rcs for the audio file and append to list
+                    # print(phoneme_f)
+                    self.rcs.append(audio_single_pp(self.rcs_init, self.epochs, self.sr, self.threshold_vc, self.num_tubes, wav_f, phoneme_f, self.vowels, self.offset))
+                    
                     # Reset Variables
                     phoneme_f = text_f = wav_f = None
     
@@ -82,8 +96,9 @@ class AudioDataset(Dataset):
         phoneme = self.phonemes[idx]
         text = self.texts[idx]
         speaker = self.speakers[idx]
+        rcs = self.rcs[idx]
 
-        return audio, phoneme, text, speaker
+        return audio, phoneme, text, speaker, rcs
     
 # Dataset that pairs audio data and labels the pair
 # Same speaker = 0 / Different speaker = 1
@@ -111,8 +126,8 @@ class AudioPair(Dataset):
     def __getitem__(self, idx):
         idx1, idx2 = self.pairs[idx]
 
-        audio1, phoneme1, text1, speaker1 = self.audio_dataset[idx1]
-        audio2, phoneme2, text2, speaker2 = self.audio_dataset[idx2]
+        audio1, phoneme1, text1, speaker1, rcs1 = self.audio_dataset[idx1]
+        audio2, phoneme2, text2, speaker2, rcs2 = self.audio_dataset[idx2]
 
         gender1 = speaker1[0]
         initials1 = speaker1[1:3]
@@ -125,13 +140,14 @@ class AudioPair(Dataset):
         if (initials1 == initials2) and (index1 == index2):
             label = 0
         
-        return audio1, phoneme1, text1, speaker1, audio2, phoneme2, text2, speaker2, label
-
+        return audio1, phoneme1, text1, speaker1, rcs1, audio2, phoneme2, text2, speaker2, rcs2, label
 
 # Calculate the frequency response of the input audio
+@njit
 def calc_fft(audio):
     num_samples = len(audio)
-    f_res = fftpack.fft(audio)
+    f_res = np.fft.fft(audio)
+    # f_res = np.array(f_res, dtype=np.complex64)
     f_res = f_res[:num_samples // 2]
     f_res = 20 * np.log10(np.abs(f_res))
     # f_res = 20 * np.log10(f_res)
@@ -140,42 +156,43 @@ def calc_fft(audio):
     return f_res
 
 # calculate the frequency response of the transfer function
-def f_res_transfer(audio, phoneme, rcs, freqs, num_tubes):
-    f_ress = []
-    t_function = TF(audio, phoneme, rcs, freqs, num_tubes)
+@njit
+def f_res_transfer(audio, phoneme, rcs, freqs, num_tubes, sr):
+    f_ress = np.empty(len(freqs), dtype=np.float32)
 
-    for f in freqs:
-        f_res = t_function.tf(f)
-        f_ress.append(f_res)
+    for i, f in enumerate(freqs):
+        f_res = tf(rcs, f, sr, num_tubes)
+        f_ress[i] = f_res
     # print(f_ress)
 
+    # float32
     return 20 * np.log10(np.abs(f_ress))
 
 # rcs training loop for a given phoneme
+@njit
 def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
     # Variables
-    loss_curr = 0
-    loss_prev = float('inf')
-    count = 0
-
-    f_res_tf_up = []
+    loss_curr = np.float32(0)
+    loss_prev = np.inf
+    count = np.int32(0)
 
     # frequency response from original audio = target
     # truncate it to the SR / 2
-    num_samples = len(audio)
+    num_samples = np.int32(len(audio))
     f_res_org = calc_fft(audio)
     # print(f"len(f_res_org): {len(f_res_org)}")
     # print(f"f_res_org: {f_res_org}")
 
     # Calculate the corresponding frequency values for original audio
     freq_bin = np.arange(0, num_samples) * sr / num_samples
-    freq_bin_pos = freq_bin[:num_samples // 2]
+    freq_bin_pos = freq_bin[:num_samples // 2].astype(np.float32)
+
     # print("freq_bin len: ", len(freq_bin_pos))
     # print("freq_bin: ", freq_bin_pos)
 
     for i in range(epochs):
         # Iterate over rcs
-        loss_tube = []
+        loss_tube = np.empty(len(rcs), dtype=np.float32)
         for j in range(len(rcs)):
             # Add offset to rc
             rcs_up = rcs.copy()
@@ -185,13 +202,15 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
             # print(rcs)
 
             # frequency response from transfer function for rc_up and rc_down
-            f_res_tf_up = f_res_transfer(audio, phoneme, rcs_up, freq_bin_pos, num_tubes)
-            f_res_tf_down = f_res_transfer(audio, phoneme, rcs_down, freq_bin_pos, num_tubes)
+            # since = time.time()
+            f_res_tf_up = f_res_transfer(audio, phoneme, rcs_up, freq_bin_pos, num_tubes, sr)
+            # print(f"Time taken for f_res_tf_up: {time.time() - since}s")
+            f_res_tf_down = f_res_transfer(audio, phoneme, rcs_down, freq_bin_pos, num_tubes, sr)
             # print(f"len(f_res_tf_up): {len(f_res_tf_up)}")
 
             # calculate loss
-            loss_up = np.sum(np.abs(f_res_org - f_res_tf_up))
-            loss_down = np.sum(np.abs(f_res_org - f_res_tf_down))
+            loss_up = np.sum(np.abs(f_res_org - f_res_tf_up), dtype=np.float32)
+            loss_down = np.sum(np.abs(f_res_org - f_res_tf_down), dtype=np.float32)
             # print(f"loss_up: {loss_up}")
             # print(f"loss_down: {loss_down}")
 
@@ -203,8 +222,7 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
                 rcs = rcs_down
                 loss_curr = loss_down
             
-            loss_tube.append(loss_curr)
-            
+            loss_tube[j] = loss_curr
 
             # print("Current Offset at: ", offset)
         
@@ -284,6 +302,7 @@ def make_input(results, vowels):
 # Takes in a single audio file and phoneme segmentation file and returns the input layer for the network
 # 16 * 20 (# vowels) = 320
 def audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_seg, vowels, offset):
+    # print(phoneme_seg)
     audio_batch = audio_seg(audio_wav, read_phoneme(phoneme_seg))
     rcs_layers = []
 
@@ -314,3 +333,28 @@ def audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_se
         rcs_layers.append(rcs_layer)
 
     return np.array(rcs_layers)
+
+# Not Batch-friendly, used for data preprocessing
+def audio_single_pp(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_seg, vowels, offset):
+    audio_segs = audio_seg_pp(audio_wav, read_phoneme_pp(phoneme_seg))
+    results = []
+    for seg in audio_segs:
+        audio = seg[0]
+        phoneme = seg[1]
+        start = seg[2]
+        end = seg[3]
+        # print(f"phoneme: {phoneme}")
+        # print(f"start: {start}")
+        # print(f"end: {end}")
+        if phoneme in vowels:
+            # print(f"For Phoneme: {phoneme}")
+            rcs, error = rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold_vc, num_tubes)
+            results.append((phoneme, rcs, error))
+    for result in results:
+        phoneme, rcs, error = result
+        print(f"phoneme: {phoneme}")
+        print(f"rcs: {rcs}")
+        print(f"error: {error}")
+    
+    rcs_layer = make_input(results, vowels)
+    return rcs_layer

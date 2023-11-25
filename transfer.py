@@ -1,71 +1,58 @@
 import numpy as np
+from numba import njit
+
+
+# Calculate z from omega
+@njit
+def z_calc(omega, sr):
+    z = np.exp(1j * 2 * np.pi * np.complex64(omega) / np.complex64(sr))
+    # complex64
+    return np.complex64(z)
+
+# Numerator
+@njit
+def num(z_val, rcs, N):
+    ans = np.complex64(1)
+    for rc in rcs:
+        ans = ans * (1 + rc)
+    ans = ans * (z_val ** (- N / 2))
+    # complex64
+    return ans
+
+# Denominator - D(z)
+@njit
+def den(z_val, rcs):
+    ans = np.array([1, -1], dtype=np.complex64)
+    for rc in rcs:
+        addition = np.array([[1, -rc], [-rc * z_val ** (-1), z_val ** (-1)]], dtype=np.complex64)
+        ans = np.dot(ans, addition)
+    
+    ans = np.dot(ans, np.array([[1], [0]], dtype=np.complex64))
+    return ans
 
 # Given an audio segment, corresponding phoneme label, and initial reflection coefficients. Return the transfer function.
-class TF:
-    def __init__(self, audio, phoneme, rcs=[], freqs=[], N=None, gender=None, step=None, sr=None):
-        self.audio = audio
-        self.phoneme = phoneme
-        
-        if len(freqs) > 0:
-            if isinstance(freqs, list):
-                self.freqs = np.array(freqs)
-            else:
-                self.freqs = freqs
+@njit
+def tf(rcs, omega, sr, N):
 
-        if len(rcs) > 0:
-            if isinstance(rcs, list):
-                self.rcs = np.array(rcs)
-            else:
-                self.rcs = rcs
+    z_val = z_calc(omega, sr)
+    
+    # rcs into complex64
+    rcs = rcs.astype(np.complex64)
+    numerator = num(z_val, rcs, N)
+    # print(f"numerator_shape: {numerator.shape}")
+    # print(f"numerator: {numerator}")
+    denominator = den(z_val, rcs)
+    # print(f"denominator_shape: {denominator.shape}")
+    # print(f"denominator: {denominator}")
+    # print(f"denominator dtype: {denominator.dtype}")
+    f_res = np.abs(numerator / denominator)
+    # print f_res dtype
+    # print(f"f_res dtype: {f_res.item().dtype}")
+    # print(f"f_res: {f_res}")
+    # print(f"f_res.item(): {f_res.item()}")
+    f_res = np.array(f_res.item(), dtype=np.float32)
 
-        if N:
-            self.N = N
-        else:
-            self.N = len(rcs)
-        if step:
-            self.step = step
-        else:
-            self.step = 0.1
-        if sr:
-            self.sr = sr
-        else:
-            self.sr = 16000
+    # val = 600 * np.log10(np.abs(f_res.item()))
 
-    # transfer function
-    def tf(self, omega):
-
-        # Calculate z from omega
-        def z_calc():
-            z = np.exp(1j * 2 * np.pi * omega / self.sr)
-            return z
-
-        # Numerator
-        def num(z_val):
-            ans = 1
-            for rc in self.rcs:
-                ans = ans * (1 + rc)
-            ans = ans * (z_val ** (- self.N / 2))
-            return ans
-        
-        # Denominator - D(z)
-        def den(z_val):
-            ans = [1, -1]
-            for rc in self.rcs:
-                addition = [[1, -rc], [-rc * z_val ** (-1), z_val ** (-1)]]
-                ans = np.matmul(ans, addition)
-            
-            ans = np.matmul(ans, [[1], [0]])
-            return ans
-
-        z_val = z_calc()
-        numerator = num(z_val)
-        # print(f"numerator_shape: {numerator.shape}")
-        # print(f"numerator: {numerator}")
-        denominator = den(z_val)
-        # print(f"denominator_shape: {denominator.shape}")
-        # print(f"denominator: {denominator}")
-        f_res = abs(numerator / denominator)
-        # val = 600 * np.log10(np.abs(f_res.item()))
-        val = f_res.item()
-
-        return val
+    # float32
+    return f_res

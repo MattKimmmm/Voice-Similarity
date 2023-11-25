@@ -3,6 +3,7 @@ import scipy.io as sio
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from numba import njit
 # from core import f_res_transfer
 
 # variables
@@ -34,7 +35,20 @@ def read_phoneme(phoneme_org):
         # print(f"segs.shape: {segs.shape}")
         # print(f"segs: {segs}")
         segs_list.append(segs)
-    return segs_list
+    return np.array(segs_list)
+
+# Not batch-friendly, used for data preprocessing
+def read_phoneme_pp(phoneme_org):
+    segs = []
+    with open(phoneme_org, 'r') as f:
+        for line in f:
+            segs.append(line.split())
+    segs = np.array(segs)
+    segs[:, 0] = segs[:, 0].astype(float)
+    segs[:, 1] = segs[:, 1].astype(float)
+    # print(f"segs.shape: {segs.shape}")
+    # print(f"segs: {segs}")
+    return segs
 
 def audio_visual(audio_wav, phoneme_org, SR):
     phoneme_segs = read_phoneme(phoneme_org)
@@ -95,7 +109,7 @@ def audio_seg(audio_wav, phoneme_seg):
     for audio, phoneme in zip(audio_wav, phoneme_seg):
 
         rate, y = sio.wavfile.read(audio)
-        y = np.array(y).astype(float)
+        y = np.array(y, dtype=np.float32)
         # print(f"y.shape: {y.shape}")
         
         audio_seg = []
@@ -109,6 +123,22 @@ def audio_seg(audio_wav, phoneme_seg):
         audio_seg_list.append(audio_seg)
     
     return audio_seg_list
+
+# Not batch-friendly, used for data preprocessing
+def audio_seg_pp(audio_wav, phoneme_seg):
+    rate, y = sio.wavfile.read(audio_wav)
+    y = np.array(y).astype(float)
+    # print(f"y.shape: {y.shape}")
+
+    audio_seg = []
+    for seg in phoneme_seg:
+        start = int(float(seg[0]))
+        end = int(float(seg[1]))
+        phoneme = seg[2]
+
+        audio_seg.append([y[start:end], phoneme, start, end])
+
+    return audio_seg
 
 # Plot the magnitude spectrum given x and y
 def plot_signal(x, y, path, title, phoneme, is_org):
