@@ -75,6 +75,7 @@ class AudioDataset(Dataset):
 
                 # If all files are found, append to list
                 if phoneme_f and text_f and wav_f:
+                    since = time.time()
                     self.phonemes.append(phoneme_f)
                     self.texts.append(text_f)
                     self.audios.append(wav_f)
@@ -84,7 +85,8 @@ class AudioDataset(Dataset):
                     # Extract rcs for the audio file and append to list
                     # print(phoneme_f)
                     self.rcs.append(audio_single_pp(self.rcs_init, self.epochs, self.sr, self.threshold_vc, self.num_tubes, wav_f, phoneme_f, self.vowels, self.offset))
-                    
+                    print(f"Single audio took {time.time() - since}s")
+
                     # Reset Variables
                     phoneme_f = text_f = wav_f = None
     
@@ -230,7 +232,8 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
         loss_avg_tube = np.mean(loss_tube)
 
         if np.abs(loss_avg_tube - loss_prev) < threshold:
-            # print("Error improvement less than threshold. Terminating")
+            print("Error improvement less than threshold. Terminating")
+            print(f"Train done at Epoch {i}")
             break
 
         if loss_avg_tube > loss_prev:
@@ -239,7 +242,8 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
             count += 1
 
             if count > 4:
-                # print("Error not improving in 5 consecutive steps. Terminating")
+                print("Error not improving in 5 consecutive steps. Terminating")
+                print(f"Train done at Epoch {i}")
                 break
             
         # when loss < loss_prev
