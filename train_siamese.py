@@ -16,15 +16,15 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
         # batches
         for i, (audio1, phoneme1, text1, speaker1, rcs1, audio2, phoneme2, text2, speaker2, rcs2, label) in enumerate(dataloader):
 
-            # print(f"phoneme1: {phoneme1[0]}")
-            # print(f"phoneme2: {phoneme2}")
-            # print(f"audio1: {audio1}")
-            # print(f"audio2: {audio2}")
-            # print(f"Speaker1: {speaker1}")
-            # print(f"Speaker2: {speaker2}")
-            # print("for texts:")
-            # print(f"text1: {text1}")
-            # print(f"text2: {text2}")
+            print(f"phoneme1: {phoneme1[0]}")
+            print(f"phoneme2: {phoneme2}")
+            print(f"audio1: {audio1}")
+            print(f"audio2: {audio2}")
+            print(f"Speaker1: {speaker1}")
+            print(f"Speaker2: {speaker2}")
+            print("for texts:")
+            print(f"text1: {text1}")
+            print(f"text2: {text2}")
 
             # Initialize two (1, 1, 320) tensors
             # layer_1_tensor = torch.randn((1, 1, 320))
@@ -33,6 +33,9 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
             # Convert rcs1 and rcs 2 to tensors
             rcs1 = rcs1.float().to(device)
             rcs2 = rcs2.float().to(device)
+
+            print("rcs1: ", rcs1)
+            print("rcs2: ", rcs2)
 
             # Make it 3D if the tensor is 1D (Batch size 1)
             if len(rcs1.shape) == 1:
@@ -70,7 +73,7 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
         print(f"Time elapsed: {time.time() - since}s")
     
     # save the model
-    torch.save(network.state_dict(), 'models/siamese_1115.pth')
+    torch.save(network.state_dict(), 'models/siamese_1201.pth')
     print("Training Done")
 
     

@@ -1,10 +1,11 @@
 import numpy as np
-from utils import plot_signal, audio_seg, read_phoneme, audio_seg_pp, read_phoneme_pp
+from utils import plot_signal, audio_seg, read_phoneme, audio_seg_pp, read_phoneme_pp, show_wav
 from transfer import tf
 import os
 from itertools import combinations
 import time
 from numba import njit
+import scipy.io as sio
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -171,7 +172,7 @@ def f_res_transfer(audio, phoneme, rcs, freqs, num_tubes, sr):
     return 20 * np.log10(np.abs(f_ress))
 
 # rcs training loop for a given phoneme
-@njit
+# @njit
 def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
     # Variables
     loss_curr = np.float32(0)
@@ -263,11 +264,11 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
     # print(f"Final rcs: {rcs}")
     # print(f"Final loss: {loss_avg_tube}")
     # plot f_res_org and f_res_tf_up
-    path = "./figures/vocal_tract_1115"
+    path = "./figures/paper"
     title = f"Frequency Response of {phoneme}"
-    # plot_signal(freq_bin_pos, f_res_org, path, title, phoneme, True)
+    plot_signal(freq_bin_pos, f_res_org, path, title, phoneme, True)
     title = f"V(z) of {phoneme}"
-    # plot_signal(freq_bin_pos, f_res_tf_up, path, title, phoneme, False)
+    plot_signal(freq_bin_pos, f_res_tf_up, path, title, phoneme, False)
 
     return rcs, loss_avg_tube
 
@@ -354,6 +355,46 @@ def audio_single_pp(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme
             # print(f"For Phoneme: {phoneme}")
             rcs, error = rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold_vc, num_tubes)
             results.append((phoneme, rcs, error))
+    for result in results:
+        phoneme, rcs, error = result
+        print(f"phoneme: {phoneme}")
+        print(f"rcs: {rcs}")
+        print(f"error: {error}")
+    
+    rcs_layer = make_input(results, vowels)
+    return rcs_layer
+
+# Given Audio, print out everything
+def audio_single_paper(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme_seg, text, vowels, offset):
+    audio_segs = audio_seg_pp(audio_wav, read_phoneme_pp(phoneme_seg))
+
+    t = ""
+    # get text
+    with open(text, 'r') as f:
+        for line in f:
+            t = line
+    print(f"Text: {t}")
+
+    # original audio plot
+    start_audio = 0
+    end_audio = 50074
+    rate, audio_wav = sio.wavfile.read(audio_wav)
+    show_wav(audio_wav, start_audio, end_audio, len(audio_wav), "./figures/paper")
+
+    results = []
+    for seg in audio_segs:
+        audio = seg[0]
+        phoneme = seg[1]
+        start = seg[2]
+        end = seg[3]
+        # print(f"phoneme: {phoneme}")
+        # print(f"start: {start}")
+        # print(f"end: {end}")
+        if phoneme in vowels:
+            # print(f"For Phoneme: {phoneme}")
+            rcs, error = rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold_vc, num_tubes)
+            results.append((phoneme, rcs, error))
+
     for result in results:
         phoneme, rcs, error = result
         print(f"phoneme: {phoneme}")

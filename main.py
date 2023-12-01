@@ -1,6 +1,6 @@
 from utils import audio_seg, audio_visual, read_phoneme
 import numpy as np
-from process_audio import rcs_single, audio_single, AudioDataset, AudioPair
+from process_audio import rcs_single, audio_single, audio_single_paper, AudioDataset, AudioPair
 from siamese import SiameseNetwork, ContrastiveLoss
 from train_siamese import train_loop
 from test_siamese import test_loop
@@ -56,7 +56,7 @@ def main():
     print("Calculating and adding RCS for Train dataset")
     dataset_train = AudioDataset("data/Train", RCS, EPOCHS, SR, THRESHOLD_VC, N, vowels, OFFSET)
     with open(dataset_file_train, 'wb') as f:
-        pickle.dump(dataset_file_train, f)
+        pickle.dump(dataset_train, f)
         print("Saved Train_w_rcs_acc.pkl")
     print(f"Train dataset preprocessed in {time.time() - since}s")
 
@@ -66,20 +66,24 @@ def main():
     dataset_test = AudioDataset("data/Test", RCS, EPOCHS, SR, THRESHOLD_VC, N, vowels, OFFSET)
     print(f"Test dataset preprocessed in {time.time() - since}s")
     with open(dataset_file_test, 'wb') as f:
-        pickle.dump(dataset_file_test, f)
+        pickle.dump(dataset_test, f)
         print("Saved Test_w_rcs_acc.pkl")
     print(f"Test dataset preprocessed in {time.time() - since}s")
     
-    # print(f"Data preprocessing took {time.time() - since}s")
+    print(f"Data preprocessing took {time.time() - since}s")
 
     # dataset = AudioPair(dataset_single)
 
-    # with open(dataset_file, 'rb') as f:
+    # with open(dataset_file_test, 'rb') as f:
     #     dataset = pickle.load(f)
     #     print("Loaded pair_rcs.pkl")
+    #     for i in range(len(dataset)):
+    #         print(f"dataset[{i}]: {dataset[i]}")
 
     # siamese = SiameseNetwork()
     # dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
+
+    
 
     # Train
     # train_loop(siamese, dataloader, ContrastiveLoss(), optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, DEVICE)
@@ -89,5 +93,8 @@ def main():
     # siamese.load_state_dict(state_dict)
     # test_loop(siamese, dataloader, ContrastiveLoss(), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, DEVICE)
 
+    # For paper, single audio outputs
+    # audio_single_paper(RCS, EPOCHS, SR, THRESHOLD_VC, N, "data/TRAIN/DR4/FALR0/SA1.WAV.wav", "data/TRAIN/DR4/FALR0/SA1.PHN", "data/TRAIN/DR4/FALR0/SA1.TXT",vowels, OFFSET)
+    
 if __name__ == "__main__":
     main()

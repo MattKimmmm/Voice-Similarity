@@ -68,7 +68,7 @@ def audio_visual(audio_wav, phoneme_org, SR):
             # print(f"end: {end}")
             show_wav(audio, start, end, num_samples)
 
-def show_wav(audio, start, end, num_samples):
+def show_wav(audio, start, end, num_samples, path):
     
     # Display the waveform
     plt.figure(figsize=(10, 4))
@@ -77,7 +77,9 @@ def show_wav(audio, start, end, num_samples):
     plt.xlabel('Time (s)')
     plt.ylabel('Amplitude')
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+    wave_path = os.path.join(path, "org_waveform.png")
+    plt.savefig(wave_path)
 
     # FFT
     yf = fftpack.fft(audio)
@@ -90,7 +92,9 @@ def show_wav(audio, start, end, num_samples):
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Magnitude')
     plt.title('Magnitude Spectrum')
-    plt.show()
+    # plt.show()
+    freq_path = os.path.join(path, "org_magnitude_spectrum.png")
+    plt.savefig(freq_path)
 
     # From transfer function
     # f_ress = f_res_transfer()
