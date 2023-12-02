@@ -172,7 +172,7 @@ def f_res_transfer(audio, phoneme, rcs, freqs, num_tubes, sr):
     return 20 * np.log10(np.abs(f_ress))
 
 # rcs training loop for a given phoneme
-# @njit
+@njit
 def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
     # Variables
     loss_curr = np.float32(0)
@@ -233,8 +233,8 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
         loss_avg_tube = np.mean(loss_tube)
 
         if np.abs(loss_avg_tube - loss_prev) < threshold:
-            print("Error improvement less than threshold. Terminating")
-            print(f"Train done at Epoch {i}")
+            # print("Error improvement less than threshold. Terminating")
+            # print(f"Train done at Epoch {i}")
             break
 
         if loss_avg_tube > loss_prev:
@@ -243,8 +243,8 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
             count += 1
 
             if count > 4:
-                print("Error not improving in 5 consecutive steps. Terminating")
-                print(f"Train done at Epoch {i}")
+                # print("Error not improving in 5 consecutive steps. Terminating")
+                # print(f"Train done at Epoch {i}")
                 break
             
         # when loss < loss_prev
@@ -264,11 +264,13 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
     # print(f"Final rcs: {rcs}")
     # print(f"Final loss: {loss_avg_tube}")
     # plot f_res_org and f_res_tf_up
-    path = "./figures/paper"
-    title = f"Frequency Response of {phoneme}"
-    plot_signal(freq_bin_pos, f_res_org, path, title, phoneme, True)
-    title = f"V(z) of {phoneme}"
-    plot_signal(freq_bin_pos, f_res_tf_up, path, title, phoneme, False)
+
+    # Plot
+    # path = "./figures/paper"
+    # title = f"Frequency Response of {phoneme}"
+    # plot_signal(freq_bin_pos, f_res_org, path, title, phoneme, True)
+    # title = f"V(z) of {phoneme}"
+    # plot_signal(freq_bin_pos, f_res_tf_up, path, title, phoneme, False)
 
     return rcs, loss_avg_tube
 
@@ -357,9 +359,9 @@ def audio_single_pp(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phoneme
             results.append((phoneme, rcs, error))
     for result in results:
         phoneme, rcs, error = result
-        print(f"phoneme: {phoneme}")
-        print(f"rcs: {rcs}")
-        print(f"error: {error}")
+        # print(f"phoneme: {phoneme}")
+        # print(f"rcs: {rcs}")
+        # print(f"error: {error}")
     
     rcs_layer = make_input(results, vowels)
     return rcs_layer
@@ -397,9 +399,9 @@ def audio_single_paper(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phon
 
     for result in results:
         phoneme, rcs, error = result
-        print(f"phoneme: {phoneme}")
-        print(f"rcs: {rcs}")
-        print(f"error: {error}")
+        # print(f"phoneme: {phoneme}")
+        # print(f"rcs: {rcs}")
+        # print(f"error: {error}")
     
     rcs_layer = make_input(results, vowels)
     return rcs_layer

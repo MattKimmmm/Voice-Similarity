@@ -55,8 +55,9 @@ def main():
     since = time.time()
     print("Calculating and adding RCS for Train dataset")
     dataset_train = AudioDataset("data/Train", RCS, EPOCHS, SR, THRESHOLD_VC, N, vowels, OFFSET)
+    dataset_train_f = AudioPair(dataset_train)
     with open(dataset_file_train, 'wb') as f:
-        pickle.dump(dataset_train, f)
+        pickle.dump(dataset_train_f, f)
         print("Saved Train_w_rcs_acc.pkl")
     print(f"Train dataset preprocessed in {time.time() - since}s")
 
@@ -64,9 +65,10 @@ def main():
     since = time.time()
     print("Calculating and adding RCS for Test dataset")
     dataset_test = AudioDataset("data/Test", RCS, EPOCHS, SR, THRESHOLD_VC, N, vowels, OFFSET)
+    dataset_test_f = AudioPair(dataset_test)
     print(f"Test dataset preprocessed in {time.time() - since}s")
     with open(dataset_file_test, 'wb') as f:
-        pickle.dump(dataset_test, f)
+        pickle.dump(dataset_test_f, f)
         print("Saved Test_w_rcs_acc.pkl")
     print(f"Test dataset preprocessed in {time.time() - since}s")
     
