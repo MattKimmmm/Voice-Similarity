@@ -1,56 +1,12 @@
-from scipy import fftpack
 import scipy.io as sio
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-from numba import njit
-# from core import f_res_transfer
+import time
+import pickle
 
-# variables
-SR = 16000
+from process_audio import AudioDataset, AudioPair, into_full_phoneme, RCSDataset, read_phoneme, audio_seg
+from draw import show_wav
 
-# Phoneme categories
-stops = {"b", "d", "g", "p", "t", "k", "dx", "q"}
-affricates = {"jh", "ch"}
-fricatives = {"s", "sh", "z", "zh", "f", "th", "v", "dh"}
-nasals = {"m", "n", "ng", "em", "en", "eng", "nx"}
-semivowels_glides = {"l", "r", "w", "y", "hh", "hv", "el"}
-vowels = {"iy", "ih", "eh", "ey", "ae", "aa", "aw", "ay", "ah", "ao", "oy", "ow", "uh", "uw", "ux", "er", "ax", "ix", "axr", "ax-h"}
-others = {"pau", "epi", "h#", "1", "2"}
-
-# Batch-modified
-# Process the phoneme label file and return the array [# segments, 3], where the column is [start time, end time, phoneme]
-def read_phoneme(phoneme_org):
-    segs_list = []
-    for phoneme in phoneme_org:
-        # print(f"phoneme_org: {phoneme_org}")
-        # print(f"phoneme: {phoneme}")
-        segs = []
-        with open(phoneme, 'r') as f:
-            for line in f:
-                segs.append(line.split())
-        segs = np.array(segs)
-        segs[:, 0] = segs[:, 0].astype(float)
-        segs[:, 1] = segs[:, 1].astype(float)
-        # print(f"segs.shape: {segs.shape}")
-        # print(f"segs: {segs}")
-        segs_list.append(segs)
-    return np.array(segs_list)
-
-# Not batch-friendly, used for data preprocessing
-def read_phoneme_pp(phoneme_org):
-    segs = []
-    with open(phoneme_org, 'r') as f:
-        for line in f:
-            segs.append(line.split())
-    segs = np.array(segs)
-    segs[:, 0] = segs[:, 0].astype(float)
-    segs[:, 1] = segs[:, 1].astype(float)
-    # print(f"segs.shape: {segs.shape}")
-    # print(f"segs: {segs}")
-    return segs
-
-def audio_visual(audio_wav, phoneme_org, SR):
+def audio_visual(audio_wav, phoneme_org, SR, vowels):
     phoneme_segs = read_phoneme(phoneme_org)
     audio_segs = audio_seg(audio_wav, phoneme_segs, SR)
 
@@ -68,95 +24,96 @@ def audio_visual(audio_wav, phoneme_org, SR):
             # print(f"end: {end}")
             show_wav(audio, start, end, num_samples)
 
-def show_wav(audio, start, end, num_samples, path):
-    
-    # Display the waveform
-    plt.figure(figsize=(10, 4))
-    plt.plot(np.linspace(start, end, num=num_samples), audio)
-    plt.title('Waveform')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Amplitude')
-    plt.tight_layout()
-    # plt.show()
-    wave_path = os.path.join(path, "org_waveform.png")
-    plt.savefig(wave_path)
+# For data stats
+def stats(train_data, test_data):
+    phoneme_len = []
+    vowel_len = []
 
-    # FFT
-    yf = fftpack.fft(audio)
-    xf = np.linspace(0.0, 0.5 * SR, len(audio) // 2)  # frequencies
+    for data in train_data:
+        audio1, phoneme1, text1, speaker1, rcs1, audio2, phoneme2, text2, speaker2, rcs2, label = data
 
-    # Plot the magnitude spectrum
-    # plt.plot(xf, 2.0/len(audio) * np.abs(yf[0:len(audio)//2]))
-    # dB not normalized
-    plt.plot(xf, 20 * np.log10(np.abs(yf[0:len(audio)//2])))
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Magnitude')
-    plt.title('Magnitude Spectrum')
-    # plt.show()
-    freq_path = os.path.join(path, "org_magnitude_spectrum.png")
-    plt.savefig(freq_path)
+        with open(text1, 'r') as f:
+            text = f.read()
+            start, end, *_ = text.split()
 
-    # From transfer function
-    # f_ress = f_res_transfer()
-    # xf = np.linspace(0.0, 0.5 * SR, len(f_ress))
-    # plt.plot(xf, f_ress)
-    # plt.xlabel('Frequency (Hz)')
-    # plt.ylabel('Magnitude')
-    # plt.title('Magnitude Spectrum')
-    # plt.show()
-
-# Batch-modified
-# segment audio file given phoneme labels. Return the segmented audio, corresponding phoneme labels, and the start and end time of each segment
-def audio_seg(audio_wav, phoneme_seg):
-    audio_seg_list = []
-
-    for audio, phoneme in zip(audio_wav, phoneme_seg):
-
-        rate, y = sio.wavfile.read(audio)
-        y = np.array(y, dtype=np.float32)
-        # print(f"y.shape: {y.shape}")
+            len_samples = int(end) - int(start)
+            phoneme_len.append(len_samples)
         
-        audio_seg = []
-        for seg in phoneme:
-            start = int(float(seg[0]))
-            end = int(float(seg[1]))
-            phoneme = seg[2]
+        with open(text2, 'r') as f:
+            text = f.read()
+            start, end, *_ = text.split()
 
-            audio_seg.append([y[start:end], phoneme, start, end])
-        
-        audio_seg_list.append(audio_seg)
+            len_samples = int(end) - int(start)
+            phoneme_len.append(len_samples)
+
+        len_samples_1 = sum(1 for value in rcs1 if value != 0)
+        len_samples_2 = sum(1 for value in rcs2 if value != 0)
+        len_vowels_1 = len_samples_1 // 16
+        len_vowels_2 = len_samples_2 // 16
+        vowel_len.append(len_vowels_1)
+        vowel_len.append(len_vowels_2)
     
-    return audio_seg_list
+    for data in test_data:
+        audio1, phoneme1, text1, speaker1, rcs1, audio2, phoneme2, text2, speaker2, rcs2, label = data
 
-# Not batch-friendly, used for data preprocessing
-def audio_seg_pp(audio_wav, phoneme_seg):
-    rate, y = sio.wavfile.read(audio_wav)
-    y = np.array(y).astype(float)
-    # print(f"y.shape: {y.shape}")
+        with open(text1, 'r') as f:
+            text = f.read()
+            start, end, *_ = text.split()
 
-    audio_seg = []
-    for seg in phoneme_seg:
-        start = int(float(seg[0]))
-        end = int(float(seg[1]))
-        phoneme = seg[2]
+            len_samples = int(end) - int(start)
+            phoneme_len.append(len_samples)
+        
+        with open(text2, 'r') as f:
+            text = f.read()
+            start, end, *_ = text.split()
 
-        audio_seg.append([y[start:end], phoneme, start, end])
+            len_samples = int(end) - int(start)
+            phoneme_len.append(len_samples)
 
-    return audio_seg
+        len_samples_1 = sum(1 for value in rcs1 if value != 0)
+        len_samples_2 = sum(1 for value in rcs2 if value != 0)
+        len_vowels_1 = len_samples_1 // 16
+        len_vowels_2 = len_samples_2 // 16
+        vowel_len.append(len_vowels_1)
+        vowel_len.append(len_vowels_2)
 
-# Plot the magnitude spectrum given x and y
-def plot_signal(x, y, path, title, phoneme, is_org):
-    plt.plot(x, y)
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Magnitude')
-    plt.title(title)
-    if is_org:
-        figpath = f"org_{phoneme}.png"
+    utterance_len = len(vowel_len)
+    phoneme_avg = sum(phoneme_len) / utterance_len
+    vowel_avg = sum(vowel_len) / utterance_len
 
-        filepath = os.path.join(path, figpath)
-        plt.savefig(filepath)
-    else:
-        figpath = f"tf_{phoneme}.png"
-        filepath = os.path.join(path, figpath)
-        plt.savefig(filepath)
-        plt.clf()
+    print(f"For total number of {utterance_len} utterances")
+    print(f"Average length of an utterance in samples: {phoneme_avg}")
+    print(f"Average length of an utterance in seconds: {phoneme_avg / 16000}")
+    print(f"Average number of vowels processed: {vowel_avg}")
+
+# For data stats
+def stats_agg(train_data, test_data):
+    phoneme_len = []
+    vowel_len = []
+
+    for data in train_data:
+        speaker1, rcs1, speaker2, rcs2, label = data
+
+        len_samples_1 = sum(1 for value in rcs1 if value != 0)
+        len_samples_2 = sum(1 for value in rcs2 if value != 0)
+        len_vowels_1 = len_samples_1 // 16
+        len_vowels_2 = len_samples_2 // 16
+        vowel_len.append(len_vowels_1)
+        vowel_len.append(len_vowels_2)
+    
+    for data in test_data:
+        speaker1, rcs1, speaker2, rcs2, label = data
+
+        len_samples_1 = sum(1 for value in rcs1 if value != 0)
+        len_samples_2 = sum(1 for value in rcs2 if value != 0)
+        len_vowels_1 = len_samples_1 // 16
+        len_vowels_2 = len_samples_2 // 16
+        vowel_len.append(len_vowels_1)
+        vowel_len.append(len_vowels_2)
+
+    utterance_len = len(vowel_len)
+    phoneme_avg = sum(phoneme_len) / utterance_len
+    vowel_avg = sum(vowel_len) / utterance_len
+
+    print(f"For total number of {utterance_len} utterances")
+    print(f"Average number of vowels processed: {vowel_avg}")
