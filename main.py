@@ -40,10 +40,10 @@ PRED_TRESHOLDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 MARGINS = [1, 2, 5, 10, 20, 30]
 MARGIN = 1
 
-SINGLE_PAIR_TRAIN = 'data/processed/Train_w_rcs.pkl'
-SINGLE_PAIR_TEST = 'data/processed/Test_w_rcs.pkl'
-AGG_TRAIN = 'data/processed/agg_train.pkl'
-AGG_TEST = 'data/processed/agg_test.pkl'
+SINGLE_TRAIN = 'data/processed/train_w_rcs.pkl'
+SINGLE_TEST = 'data/processed/test_w_rcs.pkl'
+AGG_TRAIN = 'data/processed/train_agg.pkl'
+AGG_TEST = 'data/processed/test_agg.pkl'
 
 # CUDA
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,39 +65,39 @@ others = {"pau", "epi", "h#", "1", "2"}
 def main():
     # Data Preprocessing
     # Extract RCS from audios and create datasets
-    # preprocess_single(RCS, EPOCHS, SR, THRESHOLD_VC, N, vowels, OFFSET, SINGLE_PAIR_TRAIN, SINGLE_PAIR_TEST)
+    preprocess_single(RCS, EPOCHS, SR, THRESHOLD_VC, N, vowels, OFFSET, SINGLE_TRAIN, SINGLE_TEST)
 
     # dataset = AudioPair(dataset_single)
 
     # Load datasets
-    with open(SINGLE_PAIR_TRAIN, 'rb') as f:
-        dataset_train_single = pickle.load(f)
-        print("Loaded pair_rcs.pkl")
-        print(f"Train Dataset length: {len(dataset_train_single)}")
+    # with open(SINGLE_PAIR_TRAIN, 'rb') as f:
+    #     dataset_train_single = pickle.load(f)
+    #     print("Loaded pair_rcs.pkl")
+    #     print(f"Train Dataset length: {len(dataset_train_single)}")
         
-    with open(SINGLE_PAIR_TEST, 'rb') as f:
-        dataset_test_single = pickle.load(f)
-        print("Loaded pair_rcs.pkl")
-        print(f"Test Dataset length: {len(dataset_test_single)}")
+    # with open(SINGLE_PAIR_TEST, 'rb') as f:
+    #     dataset_test_single = pickle.load(f)
+    #     print("Loaded pair_rcs.pkl")
+    #     print(f"Test Dataset length: {len(dataset_test_single)}")
 
     
 
     # Create aggregated dataset
     # preprocess_agg(AGG_TRAIN, AGG_TEST, dataset_train_single, dataset_test_single)
 
-    with open(AGG_TRAIN, 'rb') as f:
-        agg_train_single = pickle.load(f)
-        print("Loaded agg_train.pkl")
-        print(f"Train Dataset length: {len(agg_train_single)}")
-        # for i in range(len(dataset)):
-        #     print(f"dataset[{i}]: {dataset[i]}")
-    with open(AGG_TEST, 'rb') as f:
-        agg_test_single = pickle.load(f)
-        print("Loaded agg_test.pkl")
-        print(f"Test Dataset length: {len(agg_test_single)}")
+    # with open(AGG_TRAIN, 'rb') as f:
+    #     agg_train_single = pickle.load(f)
+    #     print("Loaded agg_train.pkl")
+    #     print(f"Train Dataset length: {len(agg_train_single)}")
+    #     # for i in range(len(dataset)):
+    #     #     print(f"dataset[{i}]: {dataset[i]}")
+    # with open(AGG_TEST, 'rb') as f:
+    #     agg_test_single = pickle.load(f)
+    #     print("Loaded agg_test.pkl")
+    #     print(f"Test Dataset length: {len(agg_test_single)}")
 
-    agg_train = RCSPair(agg_train_single)
-    agg_test = RCSPair(agg_test_single)
+    # agg_train = RCSPair(agg_train_single)
+    # agg_test = RCSPair(agg_test_single)
 
     # for i in range(len(agg_train)):
     #     # print(agg_train[i])
@@ -112,18 +112,18 @@ def main():
     # Truncate Datasets
     # dataset_train_single = balance_labels(dataset_train_single)
     # agg_train = balance_labels_agg(agg_train)
-    dataset_test_single = balance_labels(dataset_test_single)
-    agg_test = balance_labels_agg(agg_test)
+    # dataset_test_single = balance_labels(dataset_test_single)
+    # agg_test = balance_labels_agg(agg_test)
     # print(f"Balanced Training Set length: {len(agg_train)}")
     # print(f"Balanced Test Set length: {len(agg_test)}")
     # print("agg_train: ", len(agg_train[0]))
     # print("agg_test: ", agg_test[0])
-    print(f"agg_train len: {len(agg_train)}")
-    print(f"agg_test len: {len(agg_test)}")
+    # print(f"agg_train len: {len(agg_train)}")
+    # print(f"agg_test len: {len(agg_test)}")
 
-    siamese = SiameseNetwork()
-    dataloader_train = DataLoader(dataset_train_single, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
-    dataloader_test = DataLoader(dataset_test_single, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
+    # siamese = SiameseNetwork()
+    # dataloader_train = DataLoader(dataset_train_single, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
+    # dataloader_test = DataLoader(dataset_test_single, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
 
     # for i in range(len(speaker_rcs)):
     #     speaker, rcs = speaker_rcs[i]
@@ -142,7 +142,7 @@ def main():
     #     print("")
 
     # For paper, single audio outputs
-    audio_single_paper(RCS, EPOCHS, SR, THRESHOLD_VC, N, "data/Train/DR4/FALR0/SA1.WAV.wav", "data/Train/DR4/FALR0/SA1.PHN", "data/Train/DR4/FALR0/SA1.TXT",vowels, OFFSET)
+    # audio_single_paper(RCS, EPOCHS, SR, THRESHOLD_VC, N, "data/Train/DR4/FALR0/SA1.WAV.wav", "data/Train/DR4/FALR0/SA1.PHN", "data/Train/DR4/FALR0/SA1.TXT",vowels, OFFSET)
     
     # Hyperparameter Tuning
     # margin_threshold_siamese_agg(MARGINS, siamese, dataloader_train, dataloader_test, 

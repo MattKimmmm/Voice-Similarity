@@ -35,64 +35,74 @@ class AudioDataset(Dataset):
     def _load_data(self):
         # Create pair of audio files
         print("Loading data...")
+        count = 0
 
         # Currently just DR1
 
-        # for dialect in os.listdir(self.root_dir):
-        #     # print(f"Loading data from {dialect} dialect")
+        for dialect in os.listdir(self.root_dir):
         #     dialect_dir = os.path.join(self.root_dir, dialect)
 
-        dialect_dir = os.path.join(self.root_dir, "DR1")
+            dialect_dir = os.path.join(self.root_dir, dialect)
 
-        # Check if its a directory (not .DS_Store)
-        # if not os.path.isdir(dialect_dir):
-        #     continue
-
-        for speaker in os.listdir(dialect_dir):
-            # Iterate over files in speaker directory and extract relevant files
-            speaker_dir = os.path.join(dialect_dir, speaker)
-
-            if not os.path.isdir(speaker_dir):
+            # Check if its a directory (not .DS_Store)
+            if not os.path.isdir(dialect_dir):
                 continue
+ 
+            print(f"Loading data from {dialect} dialect")
 
-            # from the directory name extract gender, initials, and index
-            # print(f"Loading data from {speaker} speaker")
-            gender = speaker[0]
-            initials = speaker[1:3]
-            index = speaker[4]
+            for speaker in os.listdir(dialect_dir):
+                # Iterate over files in speaker directory and extract relevant files
+                speaker_dir = os.path.join(dialect_dir, speaker)
+                print(f"For speaker {speaker}")
 
-            files = sorted(os.listdir(speaker_dir))
+                if not os.path.isdir(speaker_dir):
+                    continue
 
-            # Initialize Variables
-            phoneme_f = None
-            text_f = None
-            wav_f = None
-            
-            for file in files:
-                if file.endswith(".PHN"):
-                    phoneme_f = os.path.join(speaker_dir, file)
-                elif file.endswith(".TXT"):
-                    text_f = os.path.join(speaker_dir, file)
-                elif file.endswith(".wav"):
-                    wav_f = os.path.join(speaker_dir, file)
+                # from the directory name extract gender, initials, and index
+                # print(f"Loading data from {speaker} speaker")
+                gender = speaker[0]
+                initials = speaker[1:3]
+                index = speaker[4]
 
-                # If all files are found, append to list
-                if phoneme_f and text_f and wav_f:
-                    since = time.time()
-                    self.phonemes.append(phoneme_f)
-                    self.texts.append(text_f)
-                    self.audios.append(wav_f)
-                    self.speakers.append(speaker)
-                    # print(f"speaker: {speaker}")
-                    
-                    # Extract rcs for the audio file and append to list
-                    # print(phoneme_f)
-                    self.rcs.append(audio_single_pp(self.rcs_init, self.epochs, self.sr, self.threshold_vc, self.num_tubes, wav_f, phoneme_f, self.vowels, self.offset))
-                    print(f"Single audio took {time.time() - since}s")
+                files = sorted(os.listdir(speaker_dir))
 
-                    # Reset Variables
-                    phoneme_f = text_f = wav_f = None
-    
+                # Initialize Variables
+                phoneme_f = None
+                text_f = None
+                wav_f = None
+                
+                for file in files:
+                    if file.endswith(".PHN"):
+                        phoneme_f = os.path.join(speaker_dir, file)
+                    elif file.endswith(".TXT"):
+                        text_f = os.path.join(speaker_dir, file)
+                    elif file.endswith(".wav"):
+                        wav_f = os.path.join(speaker_dir, file)
+
+                    # If all files are found, append to list
+                    if phoneme_f and text_f and wav_f:
+                        since = time.time()
+                        self.phonemes.append(phoneme_f)
+                        self.texts.append(text_f)
+                        self.audios.append(wav_f)
+                        self.speakers.append(speaker)
+                        # print(f"speaker: {speaker}")
+                        # print(phoneme_f)
+                        # print(text_f)
+                        # print(wav_f)
+                        # print("")
+                        
+                        # Extract rcs for the audio file and append to list
+                        # print(phoneme_f)
+                        self.rcs.append(audio_single_pp(self.rcs_init, self.epochs, self.sr, self.threshold_vc, self.num_tubes, wav_f, phoneme_f, self.vowels, self.offset))
+                        print(f"Single audio took {time.time() - since}s")
+
+                        # Reset Variables
+                        phoneme_f = text_f = wav_f = None
+                        count += 1
+        
+        print(f"Total of {count} sentences")
+        
     def __len__(self):
         return len(self.audios)
 
@@ -359,8 +369,8 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
         loss_avg_tube = np.mean(loss_tube)
 
         if np.abs(loss_avg_tube - loss_prev) < threshold:
-            print("Error improvement less than threshold. Terminating")
-            print(f"Train done at Epoch {i}")
+            # print("Error improvement less than threshold. Terminating")
+            # print(f"Train done at Epoch {i}")
             break
 
         if loss_avg_tube > loss_prev:
@@ -369,8 +379,8 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
             count += 1
 
             if count > 4:
-                print("Error not improving in 5 consecutive steps. Terminating")
-                print(f"Train done at Epoch {i}")
+                # print("Error not improving in 5 consecutive steps. Terminating")
+                # print(f"Train done at Epoch {i}")
                 break
             
         # when loss < loss_prev
@@ -386,9 +396,9 @@ def rcs_single(offset, audio, phoneme, rcs, epochs, sr, threshold, num_tubes):
         #     print(f"Loss at Epoch {i}: {loss_avg_tube}")
         #     print("Current rcs: ", rcs)
 
-    print(f"Outputs for {phoneme}:")
-    print(f"Final rcs: {rcs}")
-    print(f"Final loss: {loss_avg_tube}")
+    # print(f"Outputs for {phoneme}:")
+    # print(f"Final rcs: {rcs}")
+    # print(f"Final loss: {loss_avg_tube}")
 
     # Plot
     # path = "./figures/paper"
@@ -626,9 +636,9 @@ def preprocess_single(rcs, epochs, sr, threshold_vc, num_tubes, vowels, offset, 
     since = time.time()
     print("Calculating and adding RCS for Train dataset")
     dataset_train = AudioDataset("data/Train", rcs, epochs, sr, threshold_vc, num_tubes, vowels, offset)
-    dataset_train_f = AudioPair(dataset_train)
+    # dataset_train_f = AudioPair(dataset_train)
     with open(dst_train, 'wb') as f:
-        pickle.dump(dataset_train_f, f)
+        pickle.dump(dataset_train, f)
         print("Saved Train_w_rcs_acc.pkl")
     print(f"Train dataset preprocessed in {time.time() - since}s")
 
@@ -636,10 +646,10 @@ def preprocess_single(rcs, epochs, sr, threshold_vc, num_tubes, vowels, offset, 
     since = time.time()
     print("Calculating and adding RCS for Test dataset")
     dataset_test = AudioDataset("data/Test", rcs, epochs, sr, threshold_vc, num_tubes, vowels, offset)
-    dataset_test_f = AudioPair(dataset_test)
+    # dataset_test_f = AudioPair(dataset_test)
     print(f"Test dataset preprocessed in {time.time() - since}s")
     with open(dst_test, 'wb') as f:
-        pickle.dump(dataset_test_f, f)
+        pickle.dump(dataset_test, f)
         print("Saved Test_w_rcs_acc.pkl")
     print(f"Test dataset preprocessed in {time.time() - since}s")
     
