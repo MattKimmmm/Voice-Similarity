@@ -1,0 +1,55 @@
+nohup: ignoring input
+Device: cuda
+Loaded data/processed/train_w_rcs.pkl
+Train Dataset length: 4620
+Loaded data/processed/test_w_rcs.pkl
+Test Dataset length: 1680
+data/processed/train_agg_2.pkl
+data/processed/test_agg_2.pkl
+Loaded data/processed/train_agg_2.pkl
+Train Dataset length: 2310
+Loaded data/processed/test_agg_2.pkl
+Test Dataset length: 840
+data/processed/train_agg_5.pkl
+data/processed/test_agg_5.pkl
+Loaded data/processed/train_agg_5.pkl
+Train Dataset length: 924
+Loaded data/processed/test_agg_5.pkl
+Test Dataset length: 336
+data/processed/train_agg_10.pkl
+data/processed/test_agg_10.pkl
+Loaded data/processed/train_agg_10.pkl
+Train Dataset length: 462
+Loaded data/processed/test_agg_10.pkl
+Test Dataset length: 168
+For aggregation of 2
+Paired train dataset length: 2669205
+Paired test dataset length: 353220
+For aggregation of 5
+Paired train dataset length: 427350
+Paired test dataset length: 56616
+For aggregation of 10
+Paired train dataset length: 106953
+Paired test dataset length: 14196
+After balancing for aggregation of 2
+Train length: 13860
+Test length: 5040
+After balancing for aggregation of 5
+Train length: 2772
+Test length: 1008
+After balancing for aggregation of 10
+Train length: 924
+Test length: 336
+Original Training set length: 10674510
+Original test set length: 1412040
+Balanced Training Set length: 127420
+Balanced Test Set length: 27880
+For margin 1
+Epoch 1
+-------------------------------
+loss_prev:  inf
+loss:  0.0
+Epoch 0 loss: 0.0
+Time elapsed: 30939.458387374878s
+Epoch 2
+-------------------------------

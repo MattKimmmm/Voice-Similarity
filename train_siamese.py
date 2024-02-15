@@ -5,6 +5,7 @@ import numpy as np
 
 def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, threshold_vc, num_tubes, vowels, offset, device, margin):
     loss_prev = np.inf
+    iterations = 667157
 
     network.to(device)
     criterion.to(device)
@@ -15,7 +16,6 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
         print(f"Epoch {epoch + 1}\n-------------------------------")
         # batches
         for i, (audio1, phoneme1, text1, speaker1, rcs1, audio2, phoneme2, text2, speaker2, rcs2, label) in enumerate(dataloader):
-
             # Initialize two (1, 1, 320) tensors
             # layer_1_tensor = torch.randn((1, 1, 320))
             # layer_2_tensor = torch.randn((1, 1, 320))
@@ -58,6 +58,12 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
             loss.backward()
             optimizer.step()
 
+            # current_it = i + 1
+            # print(f"Current iteration {current_it} / {iterations}")
+            # if i % 1000 == 0:
+            #     print(f"Current iteration {i + 1}")
+            #     print(f"1000 Iterations took {time.time() - since}")
+
         print("loss_prev: ", loss_prev)
         print("loss: ", loss.item())
         # If loss improvement is less than threshold, stop training
@@ -70,10 +76,11 @@ def train_loop(network, dataloader, criterion, optimizer, epochs, rcs, sr, thres
         print(f"Time elapsed: {time.time() - since}s")
     
     # save the model
-    torch.save(network.state_dict(), f'models/siamese_b_margin_{margin}.pth')
+    torch.save(network.state_dict(), f'models/siamese_margin_{margin}.pth')
     print("Training Done")
 
-def train_loop_agg(network, dataloader, criterion, optimizer, epochs, rcs, sr, threshold_vc, num_tubes, vowels, offset, device, margin):
+def train_loop_agg(network, dataloader, criterion, optimizer, epochs, rcs, sr, threshold_vc, num_tubes, vowels, offset, 
+                   device, margin, agg_num):
     loss_prev = np.inf
 
     network.to(device)
@@ -92,8 +99,11 @@ def train_loop_agg(network, dataloader, criterion, optimizer, epochs, rcs, sr, t
             # layer_2_tensor = torch.randn((1, 1, 320))
 
             # Convert rcs1 and rcs 2 to tensors
-            rcs1 = torch.stack(rcs1).float().to(device)
-            rcs2 = torch.stack(rcs2).float().to(device)
+            # print("rcs1 type:", type(rcs1))
+            # print("rcs1 content:", rcs1)
+            # print(f"rcs1 shape: {rcs1.shape}")
+            rcs1 = rcs1.float().to(device)
+            rcs2 = rcs2.float().to(device)
             label = label.to(device)
 
             # print("rcs1: ", rcs1)
@@ -101,8 +111,8 @@ def train_loop_agg(network, dataloader, criterion, optimizer, epochs, rcs, sr, t
 
             # print(f"rcs1 before unsqueeze: {rcs1.shape}")
             # print(f"rcs2 before unsqueeze: {rcs2.shape}")
-            rcs1 = rcs1.transpose(0, 1).unsqueeze(1)
-            rcs2 = rcs2.transpose(0, 1).unsqueeze(1)
+            rcs1 = rcs1.unsqueeze(1)
+            rcs2 = rcs2.unsqueeze(1)
 
             # print(f"rcs1 after shape: {rcs1.shape}")
             # print(f"rcs2 after shape: {rcs2.shape}")
@@ -143,6 +153,6 @@ def train_loop_agg(network, dataloader, criterion, optimizer, epochs, rcs, sr, t
         print(f"Time elapsed: {time.time() - since}s")
     
     # save the model
-    torch.save(network.state_dict(), f'models/agg_f_siamese_margin_{margin}.pth')
+    torch.save(network.state_dict(), f'models/agg/agg_{agg_num}_siamese_margin_{margin}.pth')
     print("Training Done")
     

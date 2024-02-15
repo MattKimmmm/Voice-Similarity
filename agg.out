@@ -1,0 +1,132 @@
+nohup: ignoring input
+Device: cuda
+data/processed/train_agg_2.pkl
+data/processed/test_agg_2.pkl
+Loaded data/processed/train_agg_2.pkl
+Train Dataset length: 2310
+Loaded data/processed/test_agg_2.pkl
+Test Dataset length: 840
+data/processed/train_agg_5.pkl
+data/processed/test_agg_5.pkl
+Loaded data/processed/train_agg_5.pkl
+Train Dataset length: 924
+Loaded data/processed/test_agg_5.pkl
+Test Dataset length: 336
+data/processed/train_agg_10.pkl
+data/processed/test_agg_10.pkl
+Loaded data/processed/train_agg_10.pkl
+Train Dataset length: 462
+Loaded data/processed/test_agg_10.pkl
+Test Dataset length: 168
+For aggregation of 2
+Paired train dataset length: 2669205
+Paired test dataset length: 353220
+For aggregation of 5
+Paired train dataset length: 427350
+Paired test dataset length: 56616
+For aggregation of 10
+Paired train dataset length: 106953
+Paired test dataset length: 14196
+For margin 1
+Epoch 1
+-------------------------------
+loss_prev:  inf
+loss:  0.0
+Epoch 0 loss: 0.0
+Time elapsed: 29224.840138196945s
+Epoch 2
+-------------------------------
+loss_prev:  0.0
+loss:  0.0
+Loss improvement less than threshold, stop training at epoch 1, batch 166825
+Training Done
+For 2520 samples with label 0
+Average score: 0.7537328004837036
+Average loss: 0.07358627739853892
+True Positive: 1502
+False Positive: 20124
+For 350700 samples with label 1
+Average score: 1.7192453145980835
+Average loss: 0.008445886113745908
+True Negative: 330576
+False Negative: 1018
+--------------
+Precision: 0.06945343567927495
+Recall: 0.596031746031746
+FPR: 0.057382378100940976
+Accuracy: 0.9401449521544646
+F-score: 0.12440984013915349
+Test Done
+plot_roc
+Threshold 1.22367525100708 was selected with Youden's J of 0.6418838513449292
+For 2520 samples with label 0
+Average score: 0.7537327408790588
+Average loss: 0.07119297419917128
+True Positive: 2044
+False Positive: 59348
+For 350700 samples with label 1
+Average score: 1.7192726135253906
+Average loss: 0.008463083476157904
+True Negative: 291352
+False Negative: 476
+--------------
+Precision: 0.03329424029189471
+Recall: 0.8111111111111111
+FPR: 0.16922725976618191
+Accuracy: 0.8306324670177226
+F-score: 0.06396294905495056
+Test Done
+
+For margin 2
+Epoch 1
+-------------------------------
+loss_prev:  inf
+loss:  0.0
+Epoch 0 loss: 0.0
+Time elapsed: 29283.073842525482s
+Epoch 2
+-------------------------------
+loss_prev:  0.0
+loss:  0.0
+Loss improvement less than threshold, stop training at epoch 1, batch 166825
+Training Done
+For 2520 samples with label 0
+Average score: 1.553373098373413
+Average loss: 0.2765799189637998
+True Positive: 845
+False Positive: 42
+For 350700 samples with label 1
+Average score: 3.983492374420166
+Average loss: 0.02986676000046577
+True Negative: 350658
+False Negative: 1675
+--------------
+Precision: 0.9526493799323562
+Recall: 0.3353174603174603
+FPR: 0.00011976047904191617
+Accuracy: 0.9951390068512542
+F-score: 0.4960375697094217
+Test Done
+plot_roc
+Threshold 2.809920072555542 was selected with Youden's J of 0.692211766942306
+For 2520 samples with label 0
+Average score: 1.5533735752105713
+Average loss: 0.27734562296412835
+True Positive: 2182
+False Positive: 60903
+For 350700 samples with label 1
+Average score: 3.9835283756256104
+Average loss: 0.029861257934175406
+True Negative: 289797
+False Negative: 338
+--------------
+Precision: 0.03458825394309265
+Recall: 0.8658730158730159
+FPR: 0.17366124893071
+Accuracy: 0.826620802899043
+F-score: 0.06651932017376724
+Test Done
+
+For margin 5
+Epoch 1
+-------------------------------

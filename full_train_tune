@@ -1,0 +1,23 @@
+nohup: ignoring input
+Device: cuda
+Loaded data/processed/train_w_rcs.pkl
+Train Dataset length: 4620
+Loaded data/processed/test_w_rcs.pkl
+Test Dataset length: 1680
+Paired train dataset length: 10674510
+Paired train dataset length: 1412040
+For margin 1
+Epoch 1
+-------------------------------
+loss_prev:  inf
+loss:  0.0
+Epoch 0 loss: 0.0
+Time elapsed: 6063.11957526207s
+Epoch 2
+-------------------------------
+loss_prev:  0.0
+loss:  0.0031459240708500147
+Epoch 1 loss: 0.0031459240708500147
+Time elapsed: 5997.675583124161s
+Epoch 3
+-------------------------------

@@ -12,6 +12,8 @@ import pickle
 
 from draw import show_wav, plot_signal
 from torch.utils.data import Dataset, DataLoader
+from multiprocessing import Pool
+from utils import speaker_from_text, read_phoneme, audio_seg, read_phoneme_pp, audio_seg_pp, save_dataset
 
 # Custom Audio Dataset for TIMIT data
 class AudioDataset(Dataset):
@@ -35,6 +37,8 @@ class AudioDataset(Dataset):
     def _load_data(self):
         # Create pair of audio files
         print("Loading data...")
+        # For multiprocessing
+        args_list = []
         count = 0
 
         # Currently just DR1
@@ -53,10 +57,14 @@ class AudioDataset(Dataset):
             for speaker in os.listdir(dialect_dir):
                 # Iterate over files in speaker directory and extract relevant files
                 speaker_dir = os.path.join(dialect_dir, speaker)
-                print(f"For speaker {speaker}")
+                # print(f"For speaker {speaker}")
 
                 if not os.path.isdir(speaker_dir):
                     continue
+
+                # For multiprocessing
+                args = (speaker_dir, self.rcs_init, self.epochs, self.sr, self.threshold_vc, self.num_tubes, self.vowels, self.offset)
+                args_list.append(args)
 
                 # from the directory name extract gender, initials, and index
                 # print(f"Loading data from {speaker} speaker")
@@ -64,45 +72,23 @@ class AudioDataset(Dataset):
                 initials = speaker[1:3]
                 index = speaker[4]
 
-                files = sorted(os.listdir(speaker_dir))
-
-                # Initialize Variables
-                phoneme_f = None
-                text_f = None
-                wav_f = None
-                
-                for file in files:
-                    if file.endswith(".PHN"):
-                        phoneme_f = os.path.join(speaker_dir, file)
-                    elif file.endswith(".TXT"):
-                        text_f = os.path.join(speaker_dir, file)
-                    elif file.endswith(".wav"):
-                        wav_f = os.path.join(speaker_dir, file)
-
-                    # If all files are found, append to list
-                    if phoneme_f and text_f and wav_f:
-                        since = time.time()
-                        self.phonemes.append(phoneme_f)
-                        self.texts.append(text_f)
-                        self.audios.append(wav_f)
-                        self.speakers.append(speaker)
-                        # print(f"speaker: {speaker}")
-                        # print(phoneme_f)
-                        # print(text_f)
-                        # print(wav_f)
-                        # print("")
-                        
-                        # Extract rcs for the audio file and append to list
-                        # print(phoneme_f)
-                        self.rcs.append(audio_single_pp(self.rcs_init, self.epochs, self.sr, self.threshold_vc, self.num_tubes, wav_f, phoneme_f, self.vowels, self.offset))
-                        print(f"Single audio took {time.time() - since}s")
-
-                        # Reset Variables
-                        phoneme_f = text_f = wav_f = None
-                        count += 1
         
-        print(f"Total of {count} sentences")
+        with Pool(processes=8) as pool:
+            results = pool.map(process_speaker, args_list)
+
+        for results_set in results:
+            since = time.time()
+
+            for result in results_set:
+                wav_f, phoneme_f, text_f, speaker_dir, rcs = result
+                self.phonemes.append(phoneme_f)
+                self.texts.append(text_f)
+                self.audios.append(wav_f)
+                self.speakers.append(speaker)
+                self.rcs.append(rcs)
         
+            print(f"Single Pool with 8 processes took {time.time() - since}")
+
     def __len__(self):
         return len(self.audios)
 
@@ -141,22 +127,33 @@ class AudioPair(Dataset):
     def __getitem__(self, idx):
         idx1, idx2 = self.pairs[idx]
 
-        audio1, phoneme1, text1, speaker1, rcs1 = self.audio_dataset[idx1]
-        audio2, phoneme2, text2, speaker2, rcs2 = self.audio_dataset[idx2]
+        wav_f_1, phoneme_f_1, text_f_1, speaker_dir_1, rcs_1 = self.audio_dataset[idx1]
+        wav_f_2, phoneme_f_2, text_f_2, speaker_dir_2, rcs_2 = self.audio_dataset[idx2]
+        
+        speaker_dir_1 = speaker_from_text(text_f_1)
+        speaker_dir_2 = speaker_from_text(text_f_2)
 
-        gender1 = speaker1[0]
-        initials1 = speaker1[1:3]
-        index1 = speaker1[4]
-        gender2 = speaker2[0]
-        initials2 = speaker2[1:3]
-        index2 = speaker2[4]
+        gender1 = speaker_dir_1[0]
+        initials1 = speaker_dir_1[1:3]
+        index1 = speaker_dir_1[4]
+        gender2 = speaker_dir_2[0]
+        initials2 = speaker_dir_2[1:3]
+        index2 = speaker_dir_2[4]
 
         label = 1
         if (initials1 == initials2) and (index1 == index2):
             label = 0
         
-        return audio1, phoneme1, text1, speaker1, rcs1, audio2, phoneme2, text2, speaker2, rcs2, label
+        return wav_f_1, phoneme_f_1, text_f_1, speaker_dir_1, rcs_1, wav_f_2, phoneme_f_2, text_f_2, speaker_dir_2, rcs_2, label
     
+# Create paired datasets from single datasets
+def create_pairs(train_test):
+    train_single, test_single = train_test
+    train_paired = AudioPair(train_single)
+    test_paired = AudioPair(test_single)
+    print(f"Paired train dataset length: {len(train_paired)}")
+    print(f"Paired train dataset length: {len(test_paired)}")
+    return train_paired, test_paired
 
 # For aggregated Audio
 class RCSDataset(Dataset):
@@ -219,6 +216,50 @@ class RCSPair(Dataset):
             label = 0
         
         return speaker1, rcs1, speaker2, rcs2, label
+    
+# Create RCSpairs for different aggregations
+def make_RCSPair(train_tests):
+    train_tests_pair = []
+
+    for train_test in train_tests:
+        num_agg, train, test = train_test
+        train_pair = RCSPair(train)
+        test_pair = RCSPair(test)
+        print(f"For aggregation of {num_agg}")
+        print(f"Paired train dataset length: {len(train_pair)}")
+        print(f"Paired test dataset length: {len(test_pair)}")
+
+        train_tests_pair.append((num_agg, train_pair, test_pair))
+    
+    return train_tests_pair
+    
+# For multiprocessing
+def process_speaker(args):
+    since_f = time.time()
+    speaker_dir, rcs_init, epochs, sr, threshold_vc, num_tubes, vowels, offset = args
+
+    results = []
+    files = sorted(os.listdir(speaker_dir))
+    phoneme_f = text_f = wav_f = None
+
+    for file in files:
+        if file.endswith(".PHN"):
+            phoneme_f = os.path.join(speaker_dir, file)
+        elif file.endswith(".TXT"):
+            text_f = os.path.join(speaker_dir, file)
+        elif file.endswith(".wav"):
+            wav_f = os.path.join(speaker_dir, file)
+
+        if phoneme_f and text_f and wav_f:
+            since = time.time()
+            rcs = audio_single_pp(rcs_init, epochs, sr, threshold_vc, num_tubes, wav_f, phoneme_f, vowels, offset)
+            print(f"Single audio took {time.time() - since}s")
+            results.append((wav_f, phoneme_f, text_f, speaker_dir, rcs))
+            phoneme_f = text_f = wav_f = None
+
+    print(f"A single speaker process took {time.time() - since_f} s")
+
+    return results
     
 # Batch-modified
 # Takes in a single audio file and phoneme segmentation file and returns the input layer for the network
@@ -481,32 +522,55 @@ def audio_single_paper(rcs, epochs, sr, threshold_vc, num_tubes, audio_wav, phon
     return rcs_layer
 
 # Agregate audios for a single speaker
-def into_full_phoneme(dataset):
+def into_full_phoneme(dataset, num_samples):
 
     rcs_dict = {}
     phoneme_dict = {}
     text_dict = {}
 
     for data in dataset:
-        audio1, phoneme1, text1, speaker1, rcs1, audio2, phoneme2, text2, speaker2, rcs2, label = data
+        wav_f, phoneme_f, text_f, speaker_dir, rcs = data
+        speaker = speaker_from_text(text_f)
 
-        if speaker1 in rcs_dict.keys():
-            rcs_dict[speaker1].append(rcs1)
+        if speaker in rcs_dict.keys():
+            rcs_dict[speaker].append(rcs)
         else:
-            rcs_dict[speaker1] = []
-            rcs_dict[speaker1].append(rcs1)
+            rcs_dict[speaker] = []
+            rcs_dict[speaker].append(rcs)
         
-        if speaker1 in phoneme_dict.keys():
-            phoneme_dict[speaker1].append(phoneme1)
+        if speaker in phoneme_dict.keys():
+            phoneme_dict[speaker].append(phoneme_f)
         else:
-            phoneme_dict[speaker1] = []
-            phoneme_dict[speaker1].append(phoneme1)
+            phoneme_dict[speaker] = []
+            phoneme_dict[speaker].append(phoneme_f)
         
-        if speaker1 in text_dict.keys():
-            text_dict[speaker1].append(text1)
+        if speaker in text_dict.keys():
+            text_dict[speaker].append(text_f)
         else:
-            text_dict[speaker1] = []
-            text_dict[speaker1].append(text1)
+            text_dict[speaker] = []
+            text_dict[speaker].append(text_f)
+
+    # iterate over each item and parse the lists (as keys) accordingly with the given number of aggregation
+    if num_samples != 1:
+        agg_tuple = []
+        # Segment each item (of length 10) into aggregated splits
+        for rcs_item, phoneme_item, text_item in zip(rcs_dict.items(), phoneme_dict.items(), text_dict.items()):
+
+            speaker, rcs_list = rcs_item
+            _, phoneme_list = phoneme_item
+            _, text_list = text_item
+
+            arr_len = len(rcs_list)
+
+            rcs_segments = [rcs_list[i:i+num_samples] for i in range(0, arr_len, num_samples)]
+            phoneme_segments = [phoneme_list[i:i+num_samples] for i in range(0, arr_len, num_samples)]
+            text_segments = [phoneme_list[i:i+num_samples] for i in range(0, arr_len, num_samples)]
+
+            # Add each segment to the existing items, deleting the original items that were used for segmentation
+            for rcs_seg, phoneme_seg, text_seg in zip(rcs_segments, phoneme_segments, text_segments):
+                agg_tuple.append((speaker, rcs_seg, phoneme_seg, text_seg))
+                # print(f"Segment length: {len(rcs_seg)}")
+                # print(f"Speaker: {speaker}")
 
     # print(f"rcs_dict shape: {len(rcs_dict)}")
     # print(f"rcs_dict: {rcs_dict}")
@@ -517,35 +581,22 @@ def into_full_phoneme(dataset):
 
     speaker_rcs = []
 
-    # Aggregate RCS for each speaker
-    for item in rcs_dict.items():
-        speaker, rcs = item
-        # print(f"Speaker: {speaker}")
-        # print(f"RCS: {len(rcs[0])}")
+    for item in agg_tuple:
+        speaker, rcs_seg, phoneme_seg, text_seg = item
 
         rc_list = [[0, 0] for _ in range(320)]
         rc_final = [0] * 320
-        # print(rc_list)
 
-        for rc_single in rcs:
-            # print(f"rc_single length: {len(rc_single)}")
-            # print(rc_single)
-
+        # over 320-len rcs from the rcs_seg(size=num_samples)
+        for rc_single in rcs_seg:
+            # over each rc (single value)
             for i, rc in enumerate(rc_single):
-                # print(i)
-                # print(rc)
+                # Only when rc != 0 adds the rc and increment the count
                 if rc != 0:
-                    # print(f"current sum: {rc_list[i][0]}")
-                    # print(f"current count: {rc_list[i][1]}")
                     rc_list[i][0] += rc
                     rc_list[i][1] += 1
-                    # print("After update")
-                    # print(f"current sum: {rc_list[i][0]}")
-                    # print(f"current count: {rc_list[i][1]}")
             
-            # print(f"rc_list length: {len(rc_list)}")
-            # print(rc_list)
-                
+            # Sum over segments and average them. Empty rcs are evaluated as 0
             for i, rc in enumerate(rc_list):
                 sum = rc[0]
                 count = rc[1]
@@ -555,10 +606,16 @@ def into_full_phoneme(dataset):
                 else:
                     rc_final[i] = 0
 
+        rc_final = np.array(rc_final)
+        
+        # print(f"speaker: {speaker}")
+        # print(f"rc_final: {rc_final}")
+        # print(f"rc_final[0] type: {type(rc_final[0])}")
+        # print(f"rc_final lenth: {len(rc_final)}")
+        # print(type(speaker_rcs))
         speaker_rcs.append((speaker, rc_final))
-    
+
     return speaker_rcs
-    
         
 # Balance Labels
 def balance_labels(dataset):
@@ -596,6 +653,13 @@ def balance_labels(dataset):
     
     return balanced
 
+# Balance Labels for both train and test and save it
+def balance_labels_mult(train_paired, test_paired, train_dst, test_dst):
+    train_b = balance_labels(train_paired)
+    test_b = balance_labels(test_paired)
+
+    save_dataset(train_b, test_b, train_dst, test_dst)
+
 # Balance Labels
 def balance_labels_agg(dataset):
 
@@ -632,6 +696,27 @@ def balance_labels_agg(dataset):
     
     return balanced
 
+# Create RCSpairs for different aggregations
+def balance_labels_agg_mult(train_tests_paired):
+
+    for train_test in train_tests_paired:
+        num_agg, train, test = train_test
+
+        # balance
+        train = balance_labels_agg(train)
+        test = balance_labels_agg(test)
+
+        train_dst = f"data/processed/train_agg_{num_agg}_b.pkl"
+        test_dst = f"data/processed/test_agg_{num_agg}_b.pkl"
+
+        save_dataset(train, test, train_dst, test_dst)
+
+        print(f"After balancing for aggregation of {num_agg}")
+        print(f"Train length: {len(train)}")
+        print(f"Test length: {len(test)}")
+    
+    return train_tests_paired
+
 def preprocess_single(rcs, epochs, sr, threshold_vc, num_tubes, vowels, offset, dst_train, dst_test):
     since = time.time()
     print("Calculating and adding RCS for Train dataset")
@@ -655,89 +740,27 @@ def preprocess_single(rcs, epochs, sr, threshold_vc, num_tubes, vowels, offset, 
     
     print(f"Data preprocessing took {time.time() - since}s")
 
-    # Aggregated Datasets
-def preprocess_agg(dst_train, dst_test, dataset_single_train, dataset_single_test):
+# Aggregated Datasets
+def preprocess_agg(dataset_single_train, dataset_single_test, num_samples):
+    dst_train = f'data/processed/train_agg_{num_samples}.pkl'
+    dst_test = f'data/processed/test_agg_{num_samples}.pkl'
 
-    speaker_rcs_train = into_full_phoneme(dataset_single_train)
-    speaker_rcs_test = into_full_phoneme(dataset_single_test)
-    agg_train_single = RCSDataset(speaker_rcs_train)
-    agg_test_single = RCSDataset(speaker_rcs_test)
+    speaker_rcs_train = into_full_phoneme(dataset_single_train, num_samples)
+    speaker_rcs_test = into_full_phoneme(dataset_single_test, num_samples)
+    print(len(speaker_rcs_train))
+    print(len(speaker_rcs_test))
 
     with open(dst_train, 'wb') as f:
-        pickle.dump(agg_train_single, f)
-        print("Saved agg_train.pkl")
+        pickle.dump(speaker_rcs_train, f)
+        print(f"Saved as {dst_train}")
     
     with open(dst_test, 'wb') as f:
-        pickle.dump(agg_test_single, f)
-        print("Saved agg_test.pkl")
+        pickle.dump(speaker_rcs_test, f)
+        print(f"Saved as {dst_test}")
 
-# Batch-modified
-# segment audio file given phoneme labels. Return the segmented audio, corresponding phoneme labels, and the start and end time of each segment
-def audio_seg(audio_wav, phoneme_seg):
-    audio_seg_list = []
-
-    for audio, phoneme in zip(audio_wav, phoneme_seg):
-
-        rate, y = sio.wavfile.read(audio)
-        y = np.array(y, dtype=np.float32)
-        # print(f"y.shape: {y.shape}")
-        
-        audio_seg = []
-        for seg in phoneme:
-            start = int(float(seg[0]))
-            end = int(float(seg[1]))
-            phoneme = seg[2]
-
-            audio_seg.append([y[start:end], phoneme, start, end])
-        
-        audio_seg_list.append(audio_seg)
+# Create aggregated datasets given list of aggregation counts
+def preprocess_agg_it(dataset_single_train, dataset_single_test, num_aggs):
+    for num_samples in num_aggs:
+        print(f"For aggregating {num_samples} samples.")
+        preprocess_agg(dataset_single_train, dataset_single_test, num_samples)
     
-    return audio_seg_list
-
-# Not batch-friendly, used for data preprocessing
-def audio_seg_pp(audio_wav, phoneme_seg):
-    rate, y = sio.wavfile.read(audio_wav)
-    y = np.array(y).astype(float)
-    # print(f"y.shape: {y.shape}")
-
-    audio_seg = []
-    for seg in phoneme_seg:
-        start = int(float(seg[0]))
-        end = int(float(seg[1]))
-        phoneme = seg[2]
-
-        audio_seg.append([y[start:end], phoneme, start, end])
-
-    return audio_seg
-
-# Batch-modified
-# Process the phoneme label file and return the array [# segments, 3], where the column is [start time, end time, phoneme]
-def read_phoneme(phoneme_org):
-    segs_list = []
-    for phoneme in phoneme_org:
-        # print(f"phoneme_org: {phoneme_org}")
-        # print(f"phoneme: {phoneme}")
-        segs = []
-        with open(phoneme, 'r') as f:
-            for line in f:
-                segs.append(line.split())
-        segs = np.array(segs)
-        segs[:, 0] = segs[:, 0].astype(float)
-        segs[:, 1] = segs[:, 1].astype(float)
-        # print(f"segs.shape: {segs.shape}")
-        # print(f"segs: {segs}")
-        segs_list.append(segs)
-    return np.array(segs_list)
-
-# Not batch-friendly, used for data preprocessing
-def read_phoneme_pp(phoneme_org):
-    segs = []
-    with open(phoneme_org, 'r') as f:
-        for line in f:
-            segs.append(line.split())
-    segs = np.array(segs)
-    segs[:, 0] = segs[:, 0].astype(float)
-    segs[:, 1] = segs[:, 1].astype(float)
-    # print(f"segs.shape: {segs.shape}")
-    # print(f"segs: {segs}")
-    return segs

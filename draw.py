@@ -25,7 +25,38 @@ def plot_signal(x, y, path, title, phoneme, is_org):
 def plot_roc(fpr, tpr,roc_auc, margin, path):
     print("plot_roc")
 
-    figpath = f"siamese_b_margin_{margin}"
+    figpath = f"siamese_margin_{margin}"
+    filepath = os.path.join(path, figpath)
+
+    plt.figure()
+    plt.plot(fpr, tpr, label='ROC Curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic')
+    plt.legend(loc="lower right")
+    plt.savefig(filepath)
+
+# Plot accuracy v number of audio aggregation
+def plot_reg():
+    print("plot_reg")
+    x = [1, 2, 5, 10]
+    y = [.6458, .8930, .9474, .9940]
+
+    plt.figure()
+    plt.plot(x, y)
+    plt.ylim([0.0, 1.0])
+    plt.xlabel('Number of Audio Aggregation')
+    plt.ylabel('Accuracy')
+    plt.savefig('figures/performance')
+    plt.show()
+
+def plot_roc_agg(fpr, tpr,roc_auc, margin, path, agg_num):
+    print("plot_roc")
+
+    figpath = f"agg_{agg_num}_siamese_margin_{margin}"
     filepath = os.path.join(path, figpath)
 
     plt.figure()

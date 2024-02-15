@@ -1,11 +1,14 @@
-from utils import audio_visual, stats, stats_agg
+from utils import audio_visual, stats_agg, stats_single, load_dataset, load_datasets, load_datasets_b, stats_agg_mult
 import numpy as np
 from process_audio import rcs_single, audio_single, audio_single_paper, AudioDataset, AudioPair, into_full_phoneme
-from process_audio import balance_labels, RCSDataset, RCSPair, balance_labels_agg
+from process_audio import balance_labels, RCSDataset, RCSPair, balance_labels_agg, preprocess_agg_it, make_RCSPair
+from process_audio import create_pairs, balance_labels_agg_mult, balance_labels_mult
 from siamese import SiameseNetwork, ContrastiveLoss, Siamese_dropout, Siamese_dropout_hidden, Siamese_st16, Siamese_st8
 from siamese import Siamese_fc, Siamese_Conv, Siamese_Conv_fc
 from test_siamese import test_loop
-from tunes import margin_threshold_siamese, margin_threshold_siamese_agg
+from tunes import margin_threshold_siamese, margin_threshold_siamese_agg, margin_threshold_multiple
+from draw import plot_reg
+
 import pickle
 import time
 
@@ -39,11 +42,15 @@ BATCH_SIZE = 16
 PRED_TRESHOLDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 MARGINS = [1, 2, 5, 10, 20, 30]
 MARGIN = 1
+NUM_AGGS = [2, 5, 10]
 
 SINGLE_TRAIN = 'data/processed/train_w_rcs.pkl'
 SINGLE_TEST = 'data/processed/test_w_rcs.pkl'
 AGG_TRAIN = 'data/processed/train_agg.pkl'
 AGG_TEST = 'data/processed/test_agg.pkl'
+SINGLE_TRAIN_B = 'data/processed/train_b'
+SINGLE_TEST_B = 'data/processed/test_b'
+
 
 # CUDA
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,89 +72,64 @@ others = {"pau", "epi", "h#", "1", "2"}
 def main():
     # Data Preprocessing
     # Extract RCS from audios and create datasets
-    preprocess_single(RCS, EPOCHS, SR, THRESHOLD_VC, N, vowels, OFFSET, SINGLE_TRAIN, SINGLE_TEST)
-
-    # dataset = AudioPair(dataset_single)
-
-    # Load datasets
-    # with open(SINGLE_PAIR_TRAIN, 'rb') as f:
-    #     dataset_train_single = pickle.load(f)
-    #     print("Loaded pair_rcs.pkl")
-    #     print(f"Train Dataset length: {len(dataset_train_single)}")
-        
-    # with open(SINGLE_PAIR_TEST, 'rb') as f:
-    #     dataset_test_single = pickle.load(f)
-    #     print("Loaded pair_rcs.pkl")
-    #     print(f"Test Dataset length: {len(dataset_test_single)}")
-
-    
+    # preprocess_single(RCS, EPOCHS, SR, THRESHOLD_VC, N, vowels, OFFSET, SINGLE_TRAIN, SINGLE_TEST)
 
     # Create aggregated dataset
-    # preprocess_agg(AGG_TRAIN, AGG_TEST, dataset_train_single, dataset_test_single)
+    # dataset_train_single, dataset_test_single = load_dataset(SINGLE_TRAIN, SINGLE_TEST)
+    # preprocess_agg_it(dataset_train_single, dataset_test_single, NUM_AGGS)
 
-    # with open(AGG_TRAIN, 'rb') as f:
-    #     agg_train_single = pickle.load(f)
-    #     print("Loaded agg_train.pkl")
-    #     print(f"Train Dataset length: {len(agg_train_single)}")
-    #     # for i in range(len(dataset)):
-    #     #     print(f"dataset[{i}]: {dataset[i]}")
-    # with open(AGG_TEST, 'rb') as f:
-    #     agg_test_single = pickle.load(f)
-    #     print("Loaded agg_test.pkl")
-    #     print(f"Test Dataset length: {len(agg_test_single)}")
-
-    # agg_train = RCSPair(agg_train_single)
-    # agg_test = RCSPair(agg_test_single)
-
-    # for i in range(len(agg_train)):
-    #     # print(agg_train[i])
-    #     print(len(agg_train[i]))
-
-    # Anaylitics
-    # stats(dataset_train_single, dataset_test_single)
-    # stats_agg(agg_train, agg_test)
-
-    # print(agg_train[0])
-
-    # Truncate Datasets
-    # dataset_train_single = balance_labels(dataset_train_single)
-    # agg_train = balance_labels_agg(agg_train)
-    # dataset_test_single = balance_labels(dataset_test_single)
+    # train_tests_paired = balance_labels_agg_mult(train_tests_paired)
     # agg_test = balance_labels_agg(agg_test)
-    # print(f"Balanced Training Set length: {len(agg_train)}")
-    # print(f"Balanced Test Set length: {len(agg_test)}")
+    # print(f"Original Training set length: {len(train_paired)}")
+    # print(f"Original test set length: {len(test_paired)}")
+    # print(f"Balanced Training Set length: {len(train_paired_b)}")
+    # print(f"Balanced Test Set length: {len(test_paired_b)}")
     # print("agg_train: ", len(agg_train[0]))
     # print("agg_test: ", agg_test[0])
     # print(f"agg_train len: {len(agg_train)}")
     # print(f"agg_test len: {len(agg_test)}")
 
-    # siamese = SiameseNetwork()
-    # dataloader_train = DataLoader(dataset_train_single, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
-    # dataloader_test = DataLoader(dataset_test_single, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
+    # Load datasets
+    # Create Paired Dataset
+    # train, test = load_dataset(SINGLE_TRAIN, SINGLE_TEST)
+    # train_paired, test_paired = create_pairs(load_dataset(SINGLE_TRAIN, SINGLE_TEST))
 
-    # for i in range(len(speaker_rcs)):
-    #     speaker, rcs = speaker_rcs[i]
-    #     print(f"For speaker: {speaker}")
-    #     print(f"Aggregated RCS: {rcs}")
+    # Aggregated datasets (for agg 2, 5, 10)
+    train_tests_paired = make_RCSPair(load_datasets(NUM_AGGS))
+    # train_b, test_b = load_dataset(SINGLE_TRAIN_B, SINGLE_TEST_B)
+    # print(f"train_b lenth: {len(train_b)}")
+    # print(f"test_b length: {len(test_b)}")
 
-    # Train
-    # train_loop(siamese, dataloader_train, ContrastiveLoss(margin=MARGIN), optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, DEVICE, MARGIN)
+    # Aggregated, Balanced Datasets for different NUM_AGG
+    # train_tests_paired = load_datasets_b(NUM_AGGS)
 
-    # Test
-    # state_dict = torch.load("models/siamese_1204.pth")
-    # siamese.load_state_dict(state_dict)
-    # for pred_treshold in PRED_TRESHOLDS:
-    #     print(f"pred_threshold: {pred_treshold}")
-    #     test_loop(siamese, dataloader_test, ContrastiveLoss(margin=MARGIN), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, DEVICE, pred_treshold)
-    #     print("")
+    # Truncate Datasets
+    # train_paired_b = balance_labels(train_paired)
+    # agg_train = balance_labels_agg_mult(train_tests_paired)
+    # test_paired_b = balance_labels(test_paired)
+    # balance_labels_mult(train_paired, test_paired, SINGLE_TRAIN_B, SINGLE_TEST_B)
+    # train_tests_paired = balance_labels_agg_mult(train_tests_paired)
+
+    # Anaylitics
+    # stats_single(train, test)
+    # stats_agg_mult(train_tests_paired)
+    # plot_reg()
+
+    # print(agg_train[0])
+
+    siamese = SiameseNetwork()
+    # dataloader_train = DataLoader(train_b, batch_size=BATCH_SIZE, shuffle=True, num_workers=8)
+    # dataloader_test = DataLoader(test_b, batch_size=BATCH_SIZE, shuffle=True, num_workers=8)
 
     # For paper, single audio outputs
     # audio_single_paper(RCS, EPOCHS, SR, THRESHOLD_VC, N, "data/Train/DR4/FALR0/SA1.WAV.wav", "data/Train/DR4/FALR0/SA1.PHN", "data/Train/DR4/FALR0/SA1.TXT",vowels, OFFSET)
     
     # Hyperparameter Tuning
-    # margin_threshold_siamese_agg(MARGINS, siamese, dataloader_train, dataloader_test, 
+    # margin_threshold_siamese(MARGINS, siamese, dataloader_train, dataloader_test, 
     #                          optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, 
-                            #  DEVICE)
+    #                          DEVICE)
+    margin_threshold_multiple(MARGINS, siamese, optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, 
+                             DEVICE, train_tests_paired, BATCH_SIZE)
 
 if __name__ == "__main__":
     main()

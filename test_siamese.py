@@ -40,6 +40,7 @@ def test_loop(network, dataloader, criterion, epochs, rcs, sr, threshold_vc, num
             # print("for texts:")
             # print(f"text1: {text1}")
             # print(f"text2: {text2}")
+            # print(f"label: {label}")
 
             # layer_1 = audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio1, phoneme1, vowels, offset)
             # layer_2 = audio_single(rcs, epochs, sr, threshold_vc, num_tubes, audio2, phoneme2, vowels, offset)
@@ -184,6 +185,9 @@ def test_loop_agg(network, dataloader, criterion, epochs, rcs, sr, threshold_vc,
             # print(f"audio2: {audio2}")
             # print(f"Speaker1: {speaker1}")
             # print(f"Speaker2: {speaker2}")
+            # print(f"rcs1: {rcs1}")
+            # print(f"rcs2: {rcs2}")
+            # print(f"label: {label}")
             # print("for texts:")
             # print(f"text1: {text1}")
             # print(f"text2: {text2}")
@@ -207,15 +211,15 @@ def test_loop_agg(network, dataloader, criterion, epochs, rcs, sr, threshold_vc,
             #     layer_2_tensor = layer_2_tensor.unsqueeze(0).unsqueeze(0)
 
             # Convert rcs1 and rcs 2 to tensors
-            rcs1 = torch.stack(rcs1).float().to(device)
-            rcs2 = torch.stack(rcs2).float().to(device)
+            rcs1 = rcs1.float().to(device)
+            rcs2 = rcs2.float().to(device)
             label = label.to(device)
 
             # print("rcs1: ", rcs1)
             # print("rcs2: ", rcs2)
             
-            rcs1 = rcs1.transpose(0, 1).unsqueeze(1)
-            rcs2 = rcs2.transpose(0, 1).unsqueeze(1)
+            rcs1 = rcs1.unsqueeze(1)
+            rcs2 = rcs2.unsqueeze(1)
 
             # Pass in the two layers
             output1, output2 = network(rcs1, rcs2)
