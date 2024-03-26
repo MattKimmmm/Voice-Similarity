@@ -2,6 +2,12 @@ import scipy.io as sio
 import numpy as np
 import time
 import pickle
+import torch
+import torch.nn as nn
+import torch.nn.init as init
+
+from siamese import SiameseNetwork, ContrastiveLoss, Siamese_dropout, Siamese_dropout_hidden, Siamese_st16, Siamese_st8, Siamese_fc, Siamese_Conv, Siamese_Conv_fc
+from siamese import Siamese_Conv1_dropout, Siamese_Conv2_dropout
 
 from draw import show_wav
 
@@ -112,7 +118,6 @@ def load_dataset(train_f, test_f):
         dataset_train_single = pickle.load(f)
         print(f"Loaded {train_f}")
         print(f"Train Dataset length: {len(dataset_train_single)}")
-        print(f"Test Dataset length: {len(test_f)}")
         # for i in range(len(dataset_train_single)):
         #     print(f"phoneme: {dataset_train_single.phonemes[i]}")
         #     print(f"speaker: {dataset_train_single.speakers[i]}")
@@ -170,6 +175,20 @@ def load_datasets_b(num_aggs):
         train_tests.append((num, dataset_train, dataset_test))
     
     return train_tests
+
+# extract train, test pair corresponding to the chosen agg_num from trian_tests
+def get_train_test(train_tests, num_agg):
+    # num_agg value into index
+    if num_agg == 2:
+        num_agg = 0
+    elif num_agg == 5:
+        num_agg = 1
+    elif num_agg == 10:
+        num_agg = 2
+
+    num, dataset_train, dataset_test = train_tests[num_agg]
+
+    return (num, dataset_train, dataset_test)
 
 # save datasets
 def save_dataset(train_src, test_src, train_dst, test_dst):
@@ -255,3 +274,43 @@ def read_phoneme_pp(phoneme_org):
     # print(f"segs.shape: {segs.shape}")
     # print(f"segs: {segs}")
     return segs
+
+# define siamese networks and return them
+def siamese_models():
+    siamese_network = SiameseNetwork()
+    siamese_dropout = Siamese_dropout()
+    siamese_dropout_hiddel = Siamese_dropout_hidden()
+    siamese_st16 = Siamese_st16()
+    siamese_st8 = Siamese_st8()
+    siamese_fc = Siamese_fc()
+    siamese_conv = Siamese_Conv()
+    siamese_conv_fc = Siamese_Conv_fc()
+    
+    return [siamese_network, siamese_dropout, siamese_dropout_hiddel, siamese_st16, siamese_st8, siamese_fc, siamese_conv, siamese_conv_fc]
+
+def siamese_models_conv_dropout():
+    siamese_conv1_dropout = Siamese_Conv1_dropout()
+    siamese_conv2_dropout = Siamese_Conv2_dropout()
+
+    return [siamese_conv1_dropout, siamese_conv2_dropout]
+
+# reset model parameters
+def reset_model_params(model):
+    dic = model.state_dict()
+    for k in dic:
+        dic[k] *= 0
+    model.load_state_dict(dic)
+    del(dic)
+
+def reinitialize_model(model):
+    for module in model.modules():
+        if isinstance(module, nn.Conv1d):
+            # Kaiming (He) initialization for Conv1d layers
+            init.kaiming_uniform_(module.weight, mode='fan_in', nonlinearity='relu')
+            if module.bias is not None:
+                init.constant_(module.bias, 0)
+        elif isinstance(module, nn.Linear):
+            # Kaiming (He) initialization for Linear layers
+            init.kaiming_uniform_(module.weight, mode='fan_in', nonlinearity='relu')
+            if module.bias is not None:
+                init.constant_(module.bias, 0)

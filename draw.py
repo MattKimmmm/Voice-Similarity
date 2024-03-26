@@ -70,6 +70,24 @@ def plot_roc_agg(fpr, tpr,roc_auc, margin, path, agg_num):
     plt.legend(loc="lower right")
     plt.savefig(filepath)
 
+# plot_roc_agg for model
+def plot_roc_agg_model(fpr, tpr,roc_auc, margin, path, agg_num, model_name):
+    print("plot_roc")
+
+    figpath = f"agg_{agg_num}_model_{model_name}_siamese_margin_{margin}_balanced"
+    filepath = os.path.join(path, figpath)
+
+    plt.figure()
+    plt.plot(fpr, tpr, label='ROC Curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic')
+    plt.legend(loc="lower right")
+    plt.savefig(filepath)
+
 def show_wav(audio, start, end, num_samples, path, sr):
     
     # Display the waveform

@@ -151,7 +151,7 @@ def test_loop(network, dataloader, criterion, epochs, rcs, sr, threshold_vc, num
 
     print("Test Done")
 
-    return fpr_l, tpr_l, thresholds, roc_auc
+    return fpr_l, tpr_l, thresholds, roc_auc, precision, recall, accuracy, f
 
 def test_loop_agg(network, dataloader, criterion, epochs, rcs, sr, threshold_vc, num_tubes, vowels, offset, device, pred_threshold):
     
@@ -301,6 +301,6 @@ def test_loop_agg(network, dataloader, criterion, epochs, rcs, sr, threshold_vc,
 
     print("Test Done")
 
-    return fpr_l, tpr_l, thresholds, roc_auc
+    return fpr_l, tpr_l, thresholds, roc_auc, precision, recall, accuracy, f
     
 

@@ -1,13 +1,13 @@
-from utils import audio_visual, stats_agg, stats_single, load_dataset, load_datasets, load_datasets_b, stats_agg_mult
+from utils import audio_visual, stats_agg, stats_single, load_dataset, load_datasets, load_datasets_b, stats_agg_mult, get_train_test, siamese_models, siamese_models_conv_dropout
 import numpy as np
 from process_audio import rcs_single, audio_single, audio_single_paper, AudioDataset, AudioPair, into_full_phoneme
 from process_audio import balance_labels, RCSDataset, RCSPair, balance_labels_agg, preprocess_agg_it, make_RCSPair
 from process_audio import create_pairs, balance_labels_agg_mult, balance_labels_mult
-from siamese import SiameseNetwork, ContrastiveLoss, Siamese_dropout, Siamese_dropout_hidden, Siamese_st16, Siamese_st8
-from siamese import Siamese_fc, Siamese_Conv, Siamese_Conv_fc
 from test_siamese import test_loop
-from tunes import margin_threshold_siamese, margin_threshold_siamese_agg, margin_threshold_multiple
+from tunes import margin_threshold_siamese, margin_threshold_siamese_agg, margin_threshold_multiple, margin_threshold_multiple_models, margin_threshold_multiple_models_cv
+from tunes import margin_threshold_multiple_models_cv_margins, siamese_model_train, margin_threshold_multiple_single_margin
 from draw import plot_reg
+from siamese import SiameseNetwork
 
 import pickle
 import time
@@ -41,8 +41,13 @@ THRESHOLD_VC = 0.001
 BATCH_SIZE = 16
 PRED_TRESHOLDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 MARGINS = [1, 2, 5, 10, 20, 30]
-MARGIN = 1
+MARGINS_LARGER = [40, 50, 60, 70, 80, 90, 100]
+MARGIN = 10
 NUM_AGGS = [2, 5, 10]
+MODELS = siamese_models()
+MODEL_NAMES = ["SiameseNetwork", "Siamese_dropout", "Siamese_dropout_hidden", "Siamese_st16", "Siamese_st8", "Siamese_fc", "Siamese_Conv", "Siamese_Conv_fc"]
+MODELS_CONV_DROPOUT = siamese_models_conv_dropout()
+MODEL_NAMES_CONV_DROPOUT = ["Siamese_conv1_dropout", "Siamese_conv2_dropout"]
 
 SINGLE_TRAIN = 'data/processed/train_w_rcs.pkl'
 SINGLE_TEST = 'data/processed/test_w_rcs.pkl'
@@ -95,13 +100,15 @@ def main():
     # train_paired, test_paired = create_pairs(load_dataset(SINGLE_TRAIN, SINGLE_TEST))
 
     # Aggregated datasets (for agg 2, 5, 10)
-    train_tests_paired = make_RCSPair(load_datasets(NUM_AGGS))
+    # train_tests_paired = make_RCSPair(load_datasets(NUM_AGGS))
     # train_b, test_b = load_dataset(SINGLE_TRAIN_B, SINGLE_TEST_B)
     # print(f"train_b lenth: {len(train_b)}")
     # print(f"test_b length: {len(test_b)}")
 
     # Aggregated, Balanced Datasets for different NUM_AGG
-    # train_tests_paired = load_datasets_b(NUM_AGGS)
+    train_tests_paired = load_datasets_b(NUM_AGGS)
+    # Pick a agg_num and run ablation test
+    # num_agg, train_b, test_b = get_train_test(train_tests_paired, 2)
 
     # Truncate Datasets
     # train_paired_b = balance_labels(train_paired)
@@ -128,8 +135,25 @@ def main():
     # margin_threshold_siamese(MARGINS, siamese, dataloader_train, dataloader_test, 
     #                          optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, 
     #                          DEVICE)
-    margin_threshold_multiple(MARGINS, siamese, optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, 
-                             DEVICE, train_tests_paired, BATCH_SIZE)
+    # margin_threshold_multiple(MARGINS, siamese, optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, 
+    #                          DEVICE, train_tests_paired, BATCH_SIZE)
+    # margin_threshold_multiple_models(MARGINS, MODELS, MODEL_NAMES, EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, 
+    #                           DEVICE, BATCH_SIZE, 2, train_b, test_b)
+    
+    # cross validation of various model architectures
+    # margin_threshold_multiple_models_cv(1, MODELS, MODEL_NAMES, EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, 
+    #                           DEVICE, BATCH_SIZE, 2, train_b)
+    
+    # CV for margins
+    # margin_threshold_multiple_models_cv_margins(MARGINS + MARGINS_LARGER, siamese, "SiameseNetwork", EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, DEVICE, BATCH_SIZE, 2, train_b)
+
+    # Network = SiameseNetwork, margin = 20
+    # siamese_model_train(MARGIN, siamese, dataloader_train, dataloader_test, optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, 
+    #                          THRESHOLD_VC, N, vowels, OFFSET, DEVICE, 1, "SiameseNetwork")
+    
+    # final training with single margin and multiple agg_nums
+    margin_threshold_multiple_single_margin(MARGIN, siamese, optim.Adam(siamese.parameters(), lr=0.0005), EPOCHS, RCS, SR, THRESHOLD_VC, N, vowels, OFFSET, DEVICE, 
+                                            train_tests_paired, BATCH_SIZE, "SiameseNetwork")
 
 if __name__ == "__main__":
     main()
