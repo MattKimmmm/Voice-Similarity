@@ -24,7 +24,9 @@ The model aggregates sets of reflection coefficients from all vowel segments in 
 
 ## Current Model Performance
 
-| Dataset                 | Accuracy | F-Score |
+| Dataset                 | Accuracy | AUC     |
 |-------------------------|----------|---------|
-| Single Audio            | 0.7661   | 0.7715  |
-| Aggregated Audio        | 0.9705   | 0.9166  |
+| Single Audio            | 0.6425   | 0.6969  |
+| 2-speech aggregated     | 0.8805   | 0.9476  |
+| 5-speech aggregated     | 0.9498   | 0.9733  |
+| 10-speech aggregated    | 0.9940   | 1.0     |
